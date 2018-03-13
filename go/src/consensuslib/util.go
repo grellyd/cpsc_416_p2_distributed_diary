@@ -15,13 +15,15 @@ type Proposal struct {
 // generates a new message
 type Message struct {
 	ID uint64				// unique ID for the paxos NW
-	Vale string				// value that needs to be written into log
+	msgType string          // msgType should only be 'prepare' or 'accept'. 'prepare' messages should have empty value field
+	Value string			// value that needs to be written into log
 	FromProposerID string	// Proposer's ID to distinguish when same ID message arrived
 }
 
-func NewMessage (id uint64, val string, pid string) Message {
+func NewMessage (id uint64, msgType string, val string, pid string) Message {
 	m := Message{
 		id,
+		msgType,
 		val,
 		pid,
 	}
