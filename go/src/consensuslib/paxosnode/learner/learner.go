@@ -1,7 +1,7 @@
 package learner
 
 type Learner struct {
-	Log []ConsensusValue
+	Log []Message
 }
 
 type LearnerInterface interface {

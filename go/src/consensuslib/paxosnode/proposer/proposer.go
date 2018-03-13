@@ -2,7 +2,7 @@ package proposer
 
 
 type Proposer struct {
-	CurrentProposal Proposal
+	CurrentProposal Message
 }
 
 type ProposerInterface interface {
