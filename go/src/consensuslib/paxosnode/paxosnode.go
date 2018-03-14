@@ -20,26 +20,23 @@ type PaxosNode struct {
 }
 
 type PaxosNodeInterface interface {
-	// Sets up bidirectional RPC with all neighbours, given to the paxosnode by the client
-	BecomeNeighbours(ips []string) (connectedNbrs []string, err error)
+	// Gets the entire log on the PN
+	ReadFromPaxosNode() (err error)
 
-	// Handles the entire process of proposing a value and trying to achieve consensus
-	//TODO[sharon]: update parameters as needed. Might be RPC
-	ProposeValue(value string) (success bool, err error)
+	// TODO[sharon]: Might not include this function. Reads from a specific index.
+	ReadAtFromPaxosNode() (err error)
 
-	// Sends the value that consensus has been reached on to the entire network.
-	// Must be called after ProposeValue has returned successfully
-	//TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
-	DisseminateAcceptedValue(value string) (success bool, err error)
+	// Tries to get the value given written into the log
+	WriteToPaxosNode() (err error)
 
-	// Locally accepts the accept request sent by a PN in the system.
-	// TODO[sharon]: Figure out parameters. Might be RPC
-	AcceptAcceptRequest() (err error)
+	// Passes the list of neighbour addresses to the PN
+	SendNeighbours([]string) (err error)
 
-	// Sends a prepare request to all neighbours on behalf of the Paxosnode's proposer
-	// TODO[sharon]: Check parameters that get passed in
-	PSendPrepareRequest(value string) (err error)
+	// Exit the PN
+	UnmountPaxosNode() (err error)
+}
 
-	// Exits the Paxosnode network.
-	LeaveNetwork()
+// A client will call this to mount to the PN
+func MountPaxosNode(pnAddr string) (err error) {
+
 }
