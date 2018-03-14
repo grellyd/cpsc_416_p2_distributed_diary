@@ -6,6 +6,10 @@ import (
 
 type Message = consensuslib.Message
 
+type LearnerRole struct {
+
+}
+
 type Learner struct {
 	Log []Message
 }

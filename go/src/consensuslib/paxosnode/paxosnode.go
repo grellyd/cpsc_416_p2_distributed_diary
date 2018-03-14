@@ -4,6 +4,7 @@ import (
 	"consensuslib/paxosnode/acceptor"
 	"consensuslib/paxosnode/learner"
 	"consensuslib/paxosnode/proposer"
+	"net/rpc"
 )
 
 // TODO[sharon]TODO[all]: Add main function
@@ -12,13 +13,14 @@ type ProposerRole = proposer.ProposerRole
 type AcceptorRole = acceptor.AcceptorRole
 type LearnerRole = learner.LearnerRole
 
+
 type PaxosNode struct {
 	Addr       string // IP:port, identifier
 	Proposer   ProposerRole
 	Acceptor   AcceptorRole
 	Learner    LearnerRole
 	NbrAddrs   []string
-	Neighbours map[string]*rpc.client
+	Neighbours map[string]*rpc.Client
 }
 
 type PaxosNodeInterface interface {
@@ -29,7 +31,7 @@ type PaxosNodeInterface interface {
 	ReadAtFromPaxosNode() (err error)
 
 	// Tries to get the value given written into the log
-	WriteToPaxosNode() (err error)
+	WriteToPaxosNode(value string) (err error)
 
 	// Passes the list of neighbour addresses to the PN
 	SendNeighbours([]string) (err error)
@@ -39,6 +41,7 @@ type PaxosNodeInterface interface {
 }
 
 // A client will call this to mount to the PN
+// TODO[sharon]TODO[all]: Implement
 func MountPaxosNode(pnAddr string) (err error) {
-
+	return err
 }

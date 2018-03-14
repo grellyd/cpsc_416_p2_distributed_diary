@@ -1,32 +1,66 @@
 package paxosnode
 
 import (
+	"consensuslib"
 	//"consensuslib/paxosnode/acceptor"
 	//"consensuslib/paxosnode/learner"
 	//"consensuslib/paxosnode/proposer"
 )
 
-	// Handles the entire process of proposing a value and trying to achieve consensus
-	//TODO[sharon]: update parameters as needed. Might be RPC
-	func (pn *PaxosNode) ProposeValue(value string) (success bool, err error) {
+type Message = consensuslib.Message
 
+// Handles the entire process of proposing a value and trying to achieve consensus
+//TODO[sharon]: update parameters as needed.
+func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
+	prepReq := pn.Proposer.CreatePrepareRequest()
+	numAccepted, err := DisseminateRequest(prepReq) //TODO[sharon]: do error checking
+
+
+	if !pn.IsMajority(numAccepted) {
+		// TODO[sharon]: Handle not-majority. Quit or retry?
 	}
 
-		// Sets up bidirectional RPC with all neighbours, given to the paxosnode by the client
-		BecomeNeighbours(ips []string) (connectedNbrs []string, err error)
+	accReq := pn.Proposer.CreateAcceptRequest(value)
+	numAccepted, err = DisseminateRequest(accReq)
 
-		// Sends the value that consensus has been reached on to the entire network.
-		// Must be called after ProposeValue has returned successfully
-		//TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
-		DisseminateAcceptedValue(value string) (success bool, err error)
+	if !pn.IsMajority(numAccepted) {
+		// TODO[sharon]: Handle not-majority. Quit or retry?
+	}
+
+	accReq.MsgType = "consensusvalue"
+	_, err = DisseminateRequest(accReq)
+
+	return success, err
+}
+
+	// Sets up bidirectional RPC with all neighbours, given to the paxosnode by the client
+func BecomeNeighbours(ips []string) (connectedNbrs []string, err error) {
+	return connectedNbrs, err
+}
+
+// Sends a prepare request to all neighbours on behalf of the Paxosnode's proposer
+// TODO[sharon]: Check parameters that get passed in
+
+// Sends the value that consensus has been reached on to the entire network.
+// Must be called after ProposeValue has returned successfully
+//TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
+func	DisseminateRequest(prepReq Message) (numAccepted int, err error) {
+	return numAccepted, err
+}
+
+
+
+	// Locally accepts the accept request sent by a PN in the system.
+	// TODO[sharon]: Figure out parameters. Might be RPC
+func	AcceptAcceptRequest() (err error) {
+	return err
+}
+
+
 	
-		// Locally accepts the accept request sent by a PN in the system.
-		// TODO[sharon]: Figure out parameters. Might be RPC
-		AcceptAcceptRequest() (err error)
-	
-		// Sends a prepare request to all neighbours on behalf of the Paxosnode's proposer
-		// TODO[sharon]: Check parameters that get passed in
-		SendPrepareRequest(value string) (err error)
-	
-		// Exits the Paxosnode network.
-		LeaveNetwork()
+func (pn *PaxosNode) IsMajority(n int) bool {
+	if n > len(pn.Neighbours) {
+		return true
+	}
+	return false
+}
