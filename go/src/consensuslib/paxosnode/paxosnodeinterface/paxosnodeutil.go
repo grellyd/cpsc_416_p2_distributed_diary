@@ -1,13 +1,8 @@
-package paxosnode
+package paxosnodeinterface
 
 import (
-	"consensuslib"
-	//"consensuslib/paxosnode/acceptor"
-	//"consensuslib/paxosnode/learner"
-	//"consensuslib/paxosnode/proposer"
+	. "consensuslib"
 )
-
-type Message = consensuslib.Message
 
 // Handles the entire process of proposing a value and trying to achieve consensus
 //TODO[sharon]: update parameters as needed.
@@ -27,7 +22,7 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 		// TODO[sharon]: Handle not-majority. Quit or retry?
 	}
 
-	accReq.MsgType = "consensusvalue"
+	accReq.Type = CONSENSUS
 	_, err = DisseminateRequest(accReq)
 
 	return success, err
@@ -45,13 +40,14 @@ func BecomeNeighbours(ips []string) (connectedNbrs []string, err error) {
 // Must be called after ProposeValue has returned successfully
 //TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
 func	DisseminateRequest(prepReq Message) (numAccepted int, err error) {
+	if prepReq.Type == ACCEPT {
+
+	}
 	return numAccepted, err
 }
 
-
-
-	// Locally accepts the accept request sent by a PN in the system.
-	// TODO[sharon]: Figure out parameters. Might be RPC
+// Locally accepts the accept request sent by a PN in the system.
+// TODO[sharon]: Figure out parameters. Might be RPC
 func	AcceptAcceptRequest() (err error) {
 	return err
 }

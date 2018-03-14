@@ -1,4 +1,4 @@
-package paxosnode
+package paxosnodeinterface
 
 import (
 	"consensuslib/paxosnode/acceptor"
@@ -7,12 +7,9 @@ import (
 	"net/rpc"
 )
 
-// TODO[sharon]TODO[all]: Add main function
-
 type ProposerRole = proposer.ProposerRole
 type AcceptorRole = acceptor.AcceptorRole
 type LearnerRole = learner.LearnerRole
-
 
 type PaxosNode struct {
 	Addr       string // IP:port, identifier
@@ -45,3 +42,4 @@ type PaxosNodeInterface interface {
 func MountPaxosNode(pnAddr string) (err error) {
 	return err
 }
+
