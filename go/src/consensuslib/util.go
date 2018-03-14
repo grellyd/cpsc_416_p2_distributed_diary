@@ -15,7 +15,7 @@ type Proposal struct {
 // generates a new message
 type Message struct {
 	ID uint64				// unique ID for the paxos NW
-	msgType string          // msgType should only be 'prepare' or 'accept'. 'prepare' messages should have empty value field
+	MsgType string          // msgType should only be 'prepare' or 'accept'. 'prepare' messages should have empty value field
 	Value string			// value that needs to be written into log
 	FromProposerID string	// Proposer's ID to distinguish when same ID message arrived
 }
