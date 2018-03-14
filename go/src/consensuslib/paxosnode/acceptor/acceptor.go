@@ -4,10 +4,11 @@ import (
 	"consensuslib"
 )
 
+type Message = consensuslib.Message
 
 type AcceptorRole struct {
-	LastPromised consensuslib.Message
-	LastAccepted consensuslib.Message
+	LastPromised Message
+	LastAccepted Message
 }
 
 func NewAcceptor() AcceptorRole {
@@ -19,11 +20,11 @@ type AcceptorInterface interface {
 
 	// REQUIRES: a message with the empty/nil/'' string as a value;
 	// EFFECTS: responds with the latest promised/accepted message or with the nil if none
-	processPrepare (msg consensuslib.Message) consensuslib.Message
+	processPrepare (msg Message) Message
 
 	// REQUIRES: a message with a value submitted at proposer;
 	// EFFECTS: responds with the latest promised/accepted message or with the nil if none
-	processAccept (msg consensuslib.Message) consensuslib.Message
+	processAccept (msg Message) Message
 
 }
 

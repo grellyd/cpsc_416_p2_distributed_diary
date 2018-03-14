@@ -1,5 +1,11 @@
 package learner
 
+import (
+	"consensuslib"
+)
+
+type Message = consensuslib.Message
+
 type Learner struct {
 	Log []Message
 }

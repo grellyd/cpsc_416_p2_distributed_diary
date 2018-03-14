@@ -1,5 +1,8 @@
 package paxosnode
 
+import (
+	"paxosnode/proposer"
+)
 type PaxosNode struct {
 	Addr			 string // IP:port, identifier
 	Proposer   ProposerRole
@@ -8,6 +11,3 @@ type PaxosNode struct {
 	Neighbours map[string]*rpc.client
 }
 
-type ProposerRole struct {
-	
-}
