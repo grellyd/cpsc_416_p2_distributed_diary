@@ -1,7 +1,7 @@
 package acceptor
 
 import (
-	"proj2_c6y8_f1l0b_l0j8_l5w8_n5w8/go/src/consensuslib"
+	"consensuslib"
 )
 
 

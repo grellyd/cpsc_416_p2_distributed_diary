@@ -1,6 +1,10 @@
 package proposer
 
-import "./proj2_c6y8_f1l0b_l0j8_l5w8_n5w8/go/src/consensuslib"
+import (
+	"consensuslib"
+)
+
+type Message = consensuslib.Message
 
 type ProposerRole struct {
 	proposerID string
@@ -19,20 +23,48 @@ type ProposerInterface interface {
 	// the value corresponding to the highest prepare request ID contained in the permission granted messages from other
 	// acceptors
 	createAcceptRequest(value string) Message
+	// This is used by the PN to inform its proposer of the highest message ID value it has seen
+	// so far from other PNs. All future prepare requests must have a messageID greater than
+	// the messageID passed in
+	updateMessageID(messageID uint64)
 
 	
 }
 
 func (proposer *ProposerRole) createPrepareRequest() Message {
-	return Message{}
+	// Increment the messageID (n value) every time a new prepare request is made
+	proposer.messageID++
+	prepareRequest := Message{
+		ID: proposer.messageID,
+		MsgType: "prepare",
+		Value: "",
+		FromProposerID: proposer.proposerID,
+	}
+	return prepareRequest
 }
 
 func (proposer *ProposerRole) createAcceptRequest(value string) Message {
-	return Message{}
+	acceptRequest := Message{
+		ID: proposer.messageID,
+		MsgType: "accept",
+		Value: value,
+		FromProposerID: proposer.proposerID,
+	}
+	return acceptRequest
+}
+
+func (proposer *ProposerRole) updateMessageID(messageID uint64) {
+	proposer.messageID = messageID
 }
 
 // The constructor for a new ProposerRole object instance. A PN should only interact with just one
 // ProposerRole instance at a time
-func newProposer(proposerID string) ProposerRole {
-	return ProposerRole{}
+func newProposer(proposerID string) *ProposerRole {
+	proposer := &ProposerRole{
+		proposerID: proposerID,
+		messageID: 0,
+		CurrentPrepareRequest: nil,
+		CurrentAcceptRequest: nil,
+	}
+	return proposer
 }
