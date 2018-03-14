@@ -11,6 +11,7 @@ type Message = consensuslib.Message
 
 var pn paxosnodeinterface.PaxosNode
 
+// TODO[sharon]TODO[alex]: Implement rpcs
 func main() {
 	
 }
