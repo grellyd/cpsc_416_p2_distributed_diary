@@ -12,8 +12,8 @@ type AcceptorRole struct {
 
 func NewAcceptor() AcceptorRole {
 	acc := AcceptorRole{
-		nil,
-		nil,
+		consensuslib.Message{},
+		consensuslib.Message{},
 		}
 	return acc
 }
