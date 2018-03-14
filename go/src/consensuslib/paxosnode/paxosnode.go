@@ -6,6 +6,8 @@ import (
 	"consensuslib/paxosnode/proposer"
 )
 
+// TODO[sharon]TODO[all]: Add main function
+
 type ProposerRole = proposer.ProposerRole
 type AcceptorRole = acceptor.AcceptorRole
 type LearnerRole = learner.LearnerRole

@@ -7,12 +7,11 @@ import (
 type Message = consensuslib.Message
 
 type ProposerRole struct {
-	proposerID string
-	messageID uint64
+	proposerID            string
+	messageID             uint64
 	CurrentPrepareRequest Message
-	CurrentAcceptRequest Message
+	CurrentAcceptRequest  Message
 }
-
 
 type ProposerInterface interface {
 	// The proposer chooses a new prepare request ID and creates a prepare request
@@ -27,33 +26,31 @@ type ProposerInterface interface {
 	// so far from other PNs. All future prepare requests must have a messageID greater than
 	// the messageID passed in
 	updateMessageID(messageID uint64)
-
-	
 }
 
-func (proposer *ProposerRole) createPrepareRequest() Message {
+func (proposer *ProposerRole) CreatePrepareRequest() Message {
 	// Increment the messageID (n value) every time a new prepare request is made
 	proposer.messageID++
 	prepareRequest := Message{
-		ID: proposer.messageID,
-		MsgType: "prepare",
-		Value: "",
+		ID:             proposer.messageID,
+		MsgType:        "prepare",
+		Value:          "",
 		FromProposerID: proposer.proposerID,
 	}
 	return prepareRequest
 }
 
-func (proposer *ProposerRole) createAcceptRequest(value string) Message {
+func (proposer *ProposerRole) CreateAcceptRequest(value string) Message {
 	acceptRequest := Message{
-		ID: proposer.messageID,
-		MsgType: "accept",
-		Value: value,
+		ID:             proposer.messageID,
+		MsgType:        "accept",
+		Value:          value,
 		FromProposerID: proposer.proposerID,
 	}
 	return acceptRequest
 }
 
-func (proposer *ProposerRole) updateMessageID(messageID uint64) {
+func (proposer *ProposerRole) UpdateMessageID(messageID uint64) {
 	proposer.messageID = messageID
 }
 
@@ -61,10 +58,10 @@ func (proposer *ProposerRole) updateMessageID(messageID uint64) {
 // ProposerRole instance at a time
 func newProposer(proposerID string) *ProposerRole {
 	proposer := &ProposerRole{
-		proposerID: proposerID,
-		messageID: 0,
-		CurrentPrepareRequest: nil,
-		CurrentAcceptRequest: nil,
+		proposerID:            proposerID,
+		messageID:             0,
+		CurrentPrepareRequest: Message{},
+		CurrentAcceptRequest:  Message{},
 	}
 	return proposer
 }

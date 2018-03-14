@@ -1,8 +1,16 @@
 package paxosnode
 
+import (
+	//"consensuslib/paxosnode/acceptor"
+	//"consensuslib/paxosnode/learner"
+	//"consensuslib/paxosnode/proposer"
+)
+
 	// Handles the entire process of proposing a value and trying to achieve consensus
 	//TODO[sharon]: update parameters as needed. Might be RPC
-	ProposeValue(value string) (success bool, err error)
+	func (pn *PaxosNode) ProposeValue(value string) (success bool, err error) {
+
+	}
 
 		// Sets up bidirectional RPC with all neighbours, given to the paxosnode by the client
 		BecomeNeighbours(ips []string) (connectedNbrs []string, err error)
