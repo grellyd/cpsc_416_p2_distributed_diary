@@ -28,7 +28,7 @@ type AcceptorInterface interface {
 	ProcessAccept(msg consensuslib.Message) consensuslib.Message
 }
 
-func (acceptor *AcceptorRole) processPrepare(msg consensuslib.Message) consensuslib.Message {
+func (acceptor *AcceptorRole) ProcessPrepare(msg consensuslib.Message) consensuslib.Message {
 	// no any value had been proposed or n'>n
 	// then n' == n and ID' == ID (basically same proposer distributed proposal twice)
 	if &acceptor.LastPromised == nil || msg.ID > acceptor.LastPromised.ID {
@@ -43,6 +43,16 @@ func (acceptor *AcceptorRole) ProcessAccept(msg consensuslib.Message) consensusl
 	if &acceptor.LastAccepted == nil {
 		if msg.ID == acceptor.LastPromised.ID &&
 			msg.FromProposerID == acceptor.LastPromised.FromProposerID {
+			acceptor.LastAccepted = msg
+		} else if msg.ID > acceptor.LastPromised.ID {
+			//acceptor.LastPromised = msg
+			acceptor.LastAccepted = msg
+		}
+	} else {
+		if msg.ID == acceptor.LastPromised.ID &&
+			acceptor.LastPromised.FromProposerID == msg.FromProposerID {
+			acceptor.LastAccepted = msg
+		} else if msg.ID > acceptor.LastPromised.ID || msg.ID > acceptor.LastAccepted.ID {
 			acceptor.LastAccepted = msg
 		}
 	}
