@@ -54,8 +54,8 @@ func (proposer *ProposerRole) UpdateMessageID(messageID uint64) {
 
 // The constructor for a new ProposerRole object instance. A PN should only interact with just one
 // ProposerRole instance at a time
-func newProposer(proposerID string) *ProposerRole {
-	proposer := &ProposerRole{
+func NewProposer(proposerID string) ProposerRole {
+	proposer := ProposerRole{
 		proposerID:            proposerID,
 		messageID:             0,
 		CurrentPrepareRequest: Message{},

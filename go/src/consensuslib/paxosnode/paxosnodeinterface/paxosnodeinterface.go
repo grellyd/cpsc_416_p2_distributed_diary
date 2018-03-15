@@ -37,9 +37,18 @@ type PaxosNodeInterface interface {
 	UnmountPaxosNode() (err error)
 }
 
-// A client will call this to mount to the PN
-// TODO[sharon]TODO[all]: Implement
-func MountPaxosNode(pnAddr string) (err error) {
-	return err
+// A client will call this to mount to create a Paxos Node that
+// is linked to the client. The PN's Addr field is set as the pnAddr passed in
+func MountPaxosNode(pnAddr string) (pn PaxosNode, err error) {
+	proposer := proposer.NewProposer(pnAddr)
+	acceptor := acceptor.NewAcceptor()
+	learner := learner.NewLearner()
+	pn = PaxosNode{
+		Addr: pnAddr,
+		Proposer: proposer,
+		Acceptor: acceptor,
+		Learner: learner,
+	}
+	return pn, err
 }
 
