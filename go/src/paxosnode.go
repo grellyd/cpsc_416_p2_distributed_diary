@@ -17,7 +17,20 @@ func main() {
 }
 
 // errors only happen for disconnections
-func (pni *PaxosNodeInstance) ReadPrepareRequest(m Message, r *Message) (err error) {
+
+func (pni *PaxosNodeInstance) ProcessPrepareRequest(m Message, r *Message) (err error) {
+	*r = pn.Acceptor.ProcessPrepare(m)
+	return nil
+}
+
+func (pni *PaxosNodeInstance) ProcessAcceptRequest(m Message, r *Message) (err error) {
+	*r = pn.Acceptor.ProcessAccept(m)
+	return nil
+}
+
+func (pni *PaxosNodeInstance) ProcessLearnRequest(m Message, r *Message) (err error) {
+	// TODO: after Larissa's implementation put something like:
+	// TODO: pn.Learner.Learn(m)
 	*r = pn.Acceptor.ProcessAccept(m)
 	return nil
 }
