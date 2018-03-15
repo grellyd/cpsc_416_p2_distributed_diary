@@ -91,7 +91,7 @@ func	AcceptAcceptRequest() (err error) {
 
 	
 func (pn *PaxosNode) IsMajority(n int) bool {
-	if n > len(pn.Neighbours) {
+	if n > len(pn.Neighbours) / 2 {
 		return true
 	}
 	return false
