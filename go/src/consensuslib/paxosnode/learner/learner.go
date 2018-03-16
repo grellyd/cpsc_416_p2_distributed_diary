@@ -10,6 +10,10 @@ type LearnerRole struct {
 
 }
 
+func NewLearner() LearnerRole {
+	learner := LearnerRole{	}
+	return learner
+}
 type Learner struct {
 	Log []Message
 }

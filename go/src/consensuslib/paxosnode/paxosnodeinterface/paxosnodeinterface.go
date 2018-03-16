@@ -49,11 +49,10 @@ func MountPaxosNode(pnAddr string) (pn PaxosNode, err error) {
 	acceptor := acceptor.NewAcceptor()
 	learner := learner.NewLearner()
 	pn = PaxosNode{
-		Addr: pnAddr,
+		Addr:     pnAddr,
 		Proposer: proposer,
 		Acceptor: acceptor,
-		Learner: learner,
+		Learner:  learner,
 	}
 	return pn, err
 }
-

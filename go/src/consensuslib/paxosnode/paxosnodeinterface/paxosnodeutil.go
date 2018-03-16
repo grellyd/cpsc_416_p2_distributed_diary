@@ -67,11 +67,7 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 	return nil
 }
 
-// Sends a prepare request to all neighbours on behalf of the Paxosnode's proposer
-// TODO[sharon]: Check parameters that get passed in
-
-// Sends the value that consensus has been reached on to the entire network.
-// Must be called after ProposeValue has returned successfully
+// Disseminates a message to all neighbours. This includes prepare and accept requests.
 //TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
 func DisseminateRequest(prepReq Message, neighbours map[string]*rpc.Client) (numAccepted int, err error) {
 	numAccepted = 0
