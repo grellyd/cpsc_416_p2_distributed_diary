@@ -24,7 +24,7 @@ type PaxosNodeInterface interface {
 	// Gets the entire log on the PN
 	ReadFromPaxosNode() (err error)
 
-	// TODO[sharon]: Might not include this function. Reads from a specific index.
+	// TODO[sharon]TODO[all]: Might not include this function. Reads from a specific index.
 	ReadAtFromPaxosNode() (err error)
 
 	// Tries to get the value given written into the log
