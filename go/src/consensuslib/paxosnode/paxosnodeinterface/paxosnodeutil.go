@@ -23,6 +23,7 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	accReq := pn.Proposer.CreateAcceptRequest(value)
 	numAccepted, err = DisseminateRequest(accReq, pn.Neighbours)
 
+	// If majority is not reached, sleep for a while and try again
 	pn.ShouldRetry(numAccepted, value)
 
 	accReq.Type = CONSENSUS

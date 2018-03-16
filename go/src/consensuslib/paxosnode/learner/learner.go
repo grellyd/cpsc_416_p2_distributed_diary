@@ -7,13 +7,13 @@ import (
 type Message = consensuslib.Message
 
 type LearnerRole struct {
-
 }
 
 func NewLearner() LearnerRole {
-	learner := LearnerRole{	}
+	learner := LearnerRole{}
 	return learner
 }
+
 type Learner struct {
 	Log []Message
 }
