@@ -3,6 +3,9 @@ package paxosnodeinterface
 import (
 	. "consensuslib"
 	"net/rpc"
+	"net"
+	"fmt"
+	"log"
 )
 
 //type PaxosNodeInstance int
@@ -31,9 +34,37 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	return success, err
 }
 
-	// Sets up bidirectional RPC with all neighbours, given to the paxosnode by the client
-func BecomeNeighbours(ips []string) (connectedNbrs []string, err error) {
-	return connectedNbrs, err
+// Sets up bidirectional RPC with all neighbours. Neighbours list is passed to the
+// Paxos Node by the client.
+// TODO: REVIEW PLEASE
+func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
+	pnAddr, err := net.ResolveTCPAddr("tcp", pn.Addr)
+	if (err != nil) {
+		fmt.Println("Error in resolving TCP address of PN")
+		log.Fatal(err)
+	}
+	conn, err := net.ListenTCP("tcp", pnAddr)
+
+	rpc.Register(pn)
+	go rpc.Accept(conn)
+
+	for _, ip := range ips {
+		neighbourConn, err := rpc.Dial("tcp", ip)
+		if (err != nil) {
+			fmt.Println("Error in opening RPC connection with neighbour")
+			log.Fatal(err)
+		}
+		connected := false
+		neighbourConn.Call("PaxosNode.AcceptNeighbourConnection", pnAddr, &connected)
+
+		// Add ip to connectedNbrs and add the connection to Neighbours map
+		// after bidirectional RPC connection establishment is successful
+		if connected {
+			pn.NbrAddrs = append(pn.NbrAddrs, ip)
+			pn.Neighbours[ip] = neighbourConn
+		}
+	}
+	return nil
 }
 
 // Sends a prepare request to all neighbours on behalf of the Paxosnode's proposer
@@ -85,14 +116,25 @@ func DisseminateRequest(prepReq Message, neighbours map[string]*rpc.Client) (num
 
 // Locally accepts the accept request sent by a PN in the system.
 // TODO[sharon]: Figure out parameters. Might be RPC
-func	AcceptAcceptRequest() (err error) {
+func AcceptAcceptRequest() (err error) {
 	return err
 }
-
 	
 func (pn *PaxosNode) IsMajority(n int) bool {
 	if n > len(pn.Neighbours) / 2 {
 		return true
 	}
 	return false
+}
+
+func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err error) {
+	neighbourConn, err := rpc.Dial("tcp", addr)
+	if err != nil {
+		fmt.Println("Error in opening RPC connection with a new neighbour that connected to PN")
+		log.Fatal(err)
+	}
+	pn.NbrAddrs = append(pn.NbrAddrs, addr)
+	pn.Neighbours[addr] = neighbourConn
+	*result = true
+	return nil
 }

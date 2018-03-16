@@ -31,10 +31,15 @@ type PaxosNodeInterface interface {
 	WriteToPaxosNode(value string) (err error)
 
 	// Passes the list of neighbour addresses to the PN
-	SendNeighbours([]string) (err error)
+	SendNeighbours(ips []string) (err error)
 
 	// Exit the PN
 	UnmountPaxosNode() (err error)
+}
+
+func (pn *PaxosNode) SendNeighbours(ips []string) (err error) {
+	pn.BecomeNeighbours(ips)
+	return nil
 }
 
 // A client will call this to mount to create a Paxos Node that
