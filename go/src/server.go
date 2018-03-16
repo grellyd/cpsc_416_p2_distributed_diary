@@ -91,6 +91,10 @@ func (s *Nserver) HeartBeat(addr string, _ignored *bool) error {
 	return nil
 }
 
+func (s *Nserver) CheckAlive (addr string, alive *bool) error {
+	*alive = true
+	return nil
+}
 
 // from proj1 server.go implementation by Ivan Beschastnikh
 func monitor(k string, heartBeatInterval time.Duration) {

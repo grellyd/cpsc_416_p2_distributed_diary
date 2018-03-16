@@ -53,7 +53,8 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 			log.Fatal(err)
 		}
 		connected := false
-		neighbourConn.Call("PaxosNode.AcceptNeighbourConnection", pnAddr, &connected)
+		//neighbourConn.Call("PaxosNode.AcceptNeighbourConnection", pnAddr, &connected)
+		neighbourConn.Call("PaxosNodeInstance.ConnectRemoteNeighbour", pnAddr, &connected)
 
 		// Add ip to connectedNbrs and add the connection to Neighbours map
 		// after bidirectional RPC connection establishment is successful
