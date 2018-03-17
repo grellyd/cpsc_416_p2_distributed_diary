@@ -15,19 +15,19 @@ import (
 //TODO[sharon]: update parameters as needed.
 func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	prepReq := pn.Proposer.CreatePrepareRequest()
-	numAccepted, err := DisseminateRequest(prepReq, pn.Neighbours) //TODO[sharon]: do error checking
+	numAccepted, err := pn.DisseminateRequest(prepReq) //TODO[sharon]: do error checking
 
 	// If majority is not reached, sleep for a while and try again
 	pn.ShouldRetry(numAccepted, value)
 
 	accReq := pn.Proposer.CreateAcceptRequest(value)
-	numAccepted, err = DisseminateRequest(accReq, pn.Neighbours)
+	numAccepted, err = pn.DisseminateRequest(accReq)
 
 	// If majority is not reached, sleep for a while and try again
 	pn.ShouldRetry(numAccepted, value)
 
 	accReq.Type = CONSENSUS
-	_, err = DisseminateRequest(accReq, pn.Neighbours)
+	_, err = pn.DisseminateRequest(accReq)
 
 	return success, err
 }
@@ -68,14 +68,15 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 
 // Disseminates a message to all neighbours. This includes prepare and accept requests.
 //TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
-func DisseminateRequest(prepReq Message, neighbours map[string]*rpc.Client) (numAccepted int, err error) {
+func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err error) {
 	numAccepted = 0
 	switch prepReq.Type {
 	case PREPARE:
-		for k, v := range neighbours {
+		for k, v := range pn.Neighbours {
 			e := v.Call("PaxosNodeInstance.ProcessPrepareRequest", prepReq, &prepReq)
 			if e != nil {
-				delete(neighbours, k)
+				delete(pn.Neighbours, k)
+				pn.RemoveNbrAddr(k)
 			} else {
 				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
 				// for now just a stub which increases count anyway
@@ -83,10 +84,11 @@ func DisseminateRequest(prepReq Message, neighbours map[string]*rpc.Client) (num
 			}
 		}
 	case ACCEPT:
-		for k, v := range neighbours {
+		for k, v := range pn.Neighbours {
 			e := v.Call("PaxosNodeInstance.ProcessAcceptRequest", prepReq, &prepReq)
 			if e != nil {
-				delete(neighbours, k)
+				delete(pn.Neighbours, k)
+				pn.RemoveNbrAddr(k)
 			} else {
 				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
 				// for now just a stub which increases count anyway
@@ -94,10 +96,11 @@ func DisseminateRequest(prepReq Message, neighbours map[string]*rpc.Client) (num
 			}
 		}
 	case CONSENSUS:
-		for k, v := range neighbours {
+		for k, v := range pn.Neighbours {
 			e := v.Call("PaxosNodeInstance.ProcessLearnRequest", prepReq, &prepReq)
 			if e != nil {
-				delete(neighbours, k)
+				delete(pn.Neighbours, k)
+				pn.RemoveNbrAddr(k)
 			} else {
 				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
 				// for now just a stub which increases count anyway
@@ -122,6 +125,8 @@ func (pn *PaxosNode) IsMajority(n int) bool {
 	return false
 }
 
+// This method sets up the bi-directional RPC. A new PN joins the network and will
+// establish an RPC connection with each of the other PNs
 func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err error) {
 	neighbourConn, err := rpc.Dial("tcp", addr)
 	if err != nil {
@@ -138,5 +143,14 @@ func (pn *PaxosNode) ShouldRetry(numAccepted int, value string) {
 	if !pn.IsMajority(numAccepted) {
 		time.Sleep(SLEEPTIME)
 		pn.WriteToPaxosNode(value)
+	}
+}
+
+func (pn *PaxosNode) RemoveNbrAddr(ip string) {
+	for i, v := range pn.NbrAddrs {
+		if v == ip {
+			pn.NbrAddrs = append(pn.NbrAddrs[:i], pn.NbrAddrs[i+1:]...)
+			break
+		}
 	}
 }
