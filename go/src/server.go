@@ -1,20 +1,20 @@
 package main
 
 import (
-	"net/rpc"
-	"net"
-	"log"
-	"os"
+	"errors"
 	"fmt"
+	"log"
+	"net"
+	"net/rpc"
+	"os"
 	"sync"
 	"time"
-	"errors"
 )
 
 type Nserver int
 
 type User struct {
-	Address string
+	Address   string
 	Heartbeat int64
 }
 
@@ -22,7 +22,6 @@ type AllUsers struct {
 	sync.RWMutex
 	all map[string]*User
 }
-
 
 /*type ClientSettings struct {
 	Leader bool
@@ -33,11 +32,10 @@ type AllUsers struct {
 type HeartBeat uint32
 
 var (
-	heartBeat HeartBeat = 2
-	errLog          *log.Logger = log.New(os.Stderr, "[serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds)
-	outLog          *log.Logger = log.New(os.Stderr, "[serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds)
-	allUsers 		AllUsers	= AllUsers{all: make(map[string]*User)}
-
+	heartBeat HeartBeat   = 2
+	errLog    *log.Logger = log.New(os.Stderr, "[serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds)
+	outLog    *log.Logger = log.New(os.Stderr, "[serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds)
+	allUsers  AllUsers    = AllUsers{all: make(map[string]*User)}
 )
 
 type AddressAlreadyRegisteredError string
@@ -47,7 +45,7 @@ func (e AddressAlreadyRegisteredError) Error() string {
 }
 
 // Registers a client with the server
-func (s *Nserver) Register (addr string, res * []string) error {
+func (s *Nserver) Register(addr string, res *[]string) error {
 	allUsers.Lock()
 	defer allUsers.Unlock()
 
@@ -61,7 +59,7 @@ func (s *Nserver) Register (addr string, res * []string) error {
 
 	go monitor(addr, time.Duration(heartBeat)*time.Second)
 
-	neighbourAddresses := make ([]string,0)
+	neighbourAddresses := make([]string, 0)
 
 	for _, val := range allUsers.all {
 		if addr == val.Address {
@@ -91,7 +89,7 @@ func (s *Nserver) HeartBeat(addr string, _ignored *bool) error {
 	return nil
 }
 
-func (s *Nserver) CheckAlive (addr string, alive *bool) error {
+func (s *Nserver) CheckAlive(addr string, alive *bool) error {
 	*alive = true
 	return nil
 }
@@ -130,9 +128,8 @@ func main() {
 
 }
 
-func checkError (e error, m string) {
+func checkError(e error, m string) {
 	if e != nil {
 		errLog.Fatalf("%s, err = %s\n", m, e.Error())
 	}
 }
-

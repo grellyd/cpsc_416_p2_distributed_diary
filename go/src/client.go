@@ -1,19 +1,19 @@
 package main
 
 import (
+	"consensuslib/paxosnode/paxosnodeinterface"
 	"fmt"
-	"os"
 	"net"
 	"net/rpc"
+	"os"
 	"time"
-	"proj2_c6y8_f1l0b_l0j8_l5w8_n5w8/go/src/consensuslib/paxosnode/paxosnodeinterface"
 )
 
 var locAddr string
 var serverConnector *rpc.Client
 var paxnode paxosnodeinterface.PaxosNode
 
-func main()  {
+func main() {
 	fmt.Println("start")
 	args := os.Args[1:]
 
@@ -27,11 +27,11 @@ func main()  {
 	fmt.Println("Local addr ", locAddr)
 
 	serverConnector, _ = rpc.Dial("tcp", serverAddr.String())
-	neigh := make([]string,0)
+	neigh := make([]string, 0)
 	_ = serverConnector.Call("Nserver.Register", locAddr, &neigh)
 	fmt.Println("Neighbours ", neigh)
 
-	go doEvery(1 * time.Millisecond, SendHeartbeat)
+	go doEvery(1*time.Millisecond, SendHeartbeat)
 
 	// initializing a new PN
 	paxnode, err := paxosnodeinterface.MountPaxosNode(locAddr)
@@ -57,7 +57,7 @@ func main()  {
 	// TODO: wait for the commands from the app
 
 	fmt.Println("Sleeping now")
-	time.Sleep(15*time.Second)
+	time.Sleep(15 * time.Second)
 }
 
 func doEvery(d time.Duration, f func(time.Time) error) error {
@@ -69,9 +69,42 @@ func doEvery(d time.Duration, f func(time.Time) error) error {
 
 func SendHeartbeat(t time.Time) (err error) {
 	var ignored bool
-	err = serverConnector.Call( "Nserver.HeartBeat", locAddr, &ignored)
+	err = serverConnector.Call("Nserver.HeartBeat", locAddr, &ignored)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// RPCs for paxosnodes start here
+func (paxnodei *PaxosNodeInstance) ProcessPrepareRequest(m Message, r *Message) (err error) {
+	*r = paxnode.Acceptor.ProcessPrepare(m)
+	return nil
+}
+
+func (paxnodei *PaxosNodeInstance) ProcessAcceptRequest(m Message, r *Message) (err error) {
+	*r = paxnode.Acceptor.ProcessAccept(m)
+	return nil
+}
+
+func (paxnodei *PaxosNodeInstance) ProcessLearnRequest(m Message, r *Message) (err error) {
+	// TODO: after Larissa's implementation put something like:
+	// TODO: paxnode.Learner.Learn(m)
+	*r = paxnode.Acceptor.ProcessAccept(m)
+	if m.Equals(r) {
+		// TODO: add func to call RPC "NotifyAboutAccepted"
+	}
+	return nil
+}
+
+// RPC call which is called by node that tries to connect
+func (paxnodei *PaxosNodeInstance) ConnectRemoteNeighbour(addr string, r *bool) (err error) {
+	err = paxnode.AcceptNeighbourConnection(addr, r)
+	return err
+}
+
+// RPC call from other node's Acceptor about value it accepted
+func (paxnodei *PaxosNodeInstance) NotifyAboutAccepted(m *Message, r *bool) (err error) {
+	paxnode.CountForNumAlreadyAccepted(m)
+	return err
 }

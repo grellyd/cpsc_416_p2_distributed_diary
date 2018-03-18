@@ -2,6 +2,14 @@ package consensuslib
 
 import "time"
 
+const (
+	PREPARE MsgType = iota
+	ACCEPT
+	CONSENSUS
+)
+
+const SLEEPTIME = 100 * time.Millisecond
+
 type MsgType int
 
 // generates a new message
@@ -21,14 +29,6 @@ func NewMessage(id uint64, msgType MsgType, val string, pid string) Message {
 	}
 	return m
 }
-
-const (
-	PREPARE MsgType = iota
-	ACCEPT
-	CONSENSUS
-)
-
-const SLEEPTIME = 100 * time.Millisecond
 
 func (m *Message) Equals(m1 *Message) bool {
 	if m.ID == m1.ID && m.Value == m1.Value {
