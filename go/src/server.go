@@ -111,7 +111,6 @@ func monitor(k string, heartBeatInterval time.Duration) {
 }
 
 func main() {
-
 	// register entity required to recieve RPC calls
 	nserver := new(Nserver)
 	server := rpc.NewServer()

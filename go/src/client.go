@@ -1,6 +1,7 @@
 package main
 
 import (
+	"consensuslib"
 	"consensuslib/paxosnode/paxosnodeinterface"
 	"fmt"
 	"net"
@@ -8,6 +9,10 @@ import (
 	"os"
 	"time"
 )
+
+type PaxosNodeInstance int
+
+type Message = consensuslib.Message
 
 var locAddr string
 var serverConnector *rpc.Client
@@ -27,9 +32,9 @@ func main() {
 	fmt.Println("Local addr ", locAddr)
 
 	serverConnector, _ = rpc.Dial("tcp", serverAddr.String())
-	neigh := make([]string, 0)
-	_ = serverConnector.Call("Nserver.Register", locAddr, &neigh)
-	fmt.Println("Neighbours ", neigh)
+	neighbours := make([]string, 0)
+	_ = serverConnector.Call("Nserver.Register", locAddr, &neighbours)
+	fmt.Println("Neighbours ", neighbours)
 
 	go doEvery(1*time.Millisecond, SendHeartbeat)
 
@@ -39,11 +44,13 @@ func main() {
 		fmt.Println("Couldn't create a PN")
 		return
 	}
-	// connect PN to the neighbours
-	if len(neigh) != 0 {
-		err = paxnode.BecomeNeighbours(neigh)
+	pni := new(PaxosNodeInstance)
+	rpc.Register(pni)
+	// connect PN to the neighboursbours
+	if len(neighbours) != 0 {
+		err = paxnode.BecomeNeighbours(neighbours)
 		if err != nil {
-			fmt.Println("Cannot connect to any neighbours, ping Server")
+			fmt.Println("Cannot connect to any neighboursbours, ping Server")
 			// ping server here whether we're alive
 			alive := false
 			err = serverConnector.Call("Nserver.CheckAlive", locAddr, &alive)
