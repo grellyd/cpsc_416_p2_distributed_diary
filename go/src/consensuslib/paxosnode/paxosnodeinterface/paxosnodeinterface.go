@@ -44,6 +44,16 @@ func (pn *PaxosNode) SendNeighbours(ips []string) (err error) {
 	return err
 }
 
+func (pn *PaxosNode) UnmountPaxosNode() (err error) {
+	// Close all RPC connections with neighbours during unmount
+	for _, conn := range pn.Neighbours {
+		conn.Close()
+	}
+	pn.NbrAddrs = nil
+
+	return nil
+}
+
 // A client will call this to mount to create a Paxos Node that
 // is linked to the client. The PN's Addr field is set as the pnAddr passed in
 func MountPaxosNode(pnAddr string) (pn PaxosNode, err error) {
