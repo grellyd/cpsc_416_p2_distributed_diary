@@ -68,6 +68,30 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 	return err
 }
 
+
+// This method sets up the bi-directional RPC. A new PN joins the network and will
+// establish an RPC connection with each of the other PNs
+func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err error) {
+	neighbourConn, err := rpc.Dial("tcp", addr)
+	if err != nil {
+		fmt.Println("Error in opening RPC connection with a new neighbour that connected to PN")
+		log.Fatal(err)
+	}
+	pn.NbrAddrs = append(pn.NbrAddrs, addr)
+	pn.Neighbours[addr] = neighbourConn
+	*result = true
+	return nil
+}
+
+func (pn *PaxosNode) RemoveNbrAddr(ip string) {
+	for i, v := range pn.NbrAddrs {
+		if v == ip {
+			pn.NbrAddrs = append(pn.NbrAddrs[:i], pn.NbrAddrs[i+1:]...)
+			break
+		}
+	}
+}
+
 // Disseminates a message to all neighbours. This includes prepare and accept requests.
 //TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
 func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err error) {
@@ -144,33 +168,9 @@ func (pn *PaxosNode) CountForNumAlreadyAccepted(m * Message) {
 	}
 }
 
-// This method sets up the bi-directional RPC. A new PN joins the network and will
-// establish an RPC connection with each of the other PNs
-func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err error) {
-	neighbourConn, err := rpc.Dial("tcp", addr)
-	if err != nil {
-		fmt.Println("Error in opening RPC connection with a new neighbour that connected to PN")
-		log.Fatal(err)
-	}
-	pn.NbrAddrs = append(pn.NbrAddrs, addr)
-	pn.Neighbours[addr] = neighbourConn
-	*result = true
-	return nil
-}
-
 func (pn *PaxosNode) ShouldRetry(numAccepted int, value string) {
 	if !pn.IsMajority(numAccepted) {
 		time.Sleep(SLEEPTIME)
 		pn.WriteToPaxosNode(value)
 	}
 }
-
-func (pn *PaxosNode) RemoveNbrAddr(ip string) {
-	for i, v := range pn.NbrAddrs {
-		if v == ip {
-			pn.NbrAddrs = append(pn.NbrAddrs[:i], pn.NbrAddrs[i+1:]...)
-			break
-		}
-	}
-}
-
