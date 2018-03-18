@@ -15,7 +15,11 @@ import (
 //TODO[sharon]: update parameters as needed.
 func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	prepReq := pn.Proposer.CreatePrepareRequest()
-	numAccepted, err := pn.DisseminateRequest(prepReq) //TODO[sharon]: do error checking; Note: should return new value?
+	numAccepted, err := pn.DisseminateRequest(prepReq)
+	// TODO: Unsure if err from DisseminateRequest should bubble up to client. Previous Note: should return new value?
+	if err != nil {
+		return false, err
+	}
 
 	// If majority is not reached, sleep for a while and try again
 	// TODO: check whether should retry must return an error if no connection or something
@@ -23,6 +27,9 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 
 	accReq := pn.Proposer.CreateAcceptRequest(value)
 	numAccepted, err = pn.DisseminateRequest(accReq)
+	if err != nil {
+		return false, err
+	}
 
 	// If majority is not reached, sleep for a while and try again
 	// TODO: check whether should retry must return an error if no connection or something
@@ -30,13 +37,15 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 
 	accReq.Type = CONSENSUS
 	_, err = pn.DisseminateRequest(accReq)
+	if err != nil {
+		return false, err
+	}
 
-	return success, err
+	return success, nil
 }
 
 // Sets up bidirectional RPC with all neighbours. Neighbours list is passed to the
 // Paxos Node by the client.
-// TODO: REVIEW PLEASE
 func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 	pnAddr, err := net.ResolveTCPAddr("tcp", pn.Addr)
 	if err != nil {
@@ -51,12 +60,11 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 	for _, ip := range ips {
 		neighbourConn, err := rpc.Dial("tcp", ip)
 		if err != nil {
-			fmt.Println("Error in opening RPC connection with neighbour")
-			log.Fatal(err)
+			return NeighbourConnectionError(ip)
 		}
 		connected := false
 		//neighbourConn.Call("PaxosNode.AcceptNeighbourConnection", pnAddr, &connected)
-		neighbourConn.Call("PaxosNodeInstance.ConnectRemoteNeighbour", pnAddr, &connected)
+		err = neighbourConn.Call("PaxosNodeInstance.ConnectRemoteNeighbour", pnAddr, &connected)
 
 		// Add ip to connectedNbrs and add the connection to Neighbours map
 		// after bidirectional RPC connection establishment is successful
@@ -65,7 +73,7 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 			pn.Neighbours[ip] = neighbourConn
 		}
 	}
-	return err
+	return nil
 }
 
 
@@ -74,8 +82,7 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err error) {
 	neighbourConn, err := rpc.Dial("tcp", addr)
 	if err != nil {
-		fmt.Println("Error in opening RPC connection with a new neighbour that connected to PN")
-		log.Fatal(err)
+		return NeighbourConnectionError(addr)
 	}
 	pn.NbrAddrs = append(pn.NbrAddrs, addr)
 	pn.Neighbours[addr] = neighbourConn
@@ -140,6 +147,8 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 				}
 			}
 		}
+	default:
+		return -1, InvalidMessageTypeError(prepReq)
 	}
 
 	return numAccepted, err

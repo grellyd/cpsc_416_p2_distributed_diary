@@ -31,6 +31,8 @@ type PaxosNodeInterface interface {
 	WriteToPaxosNode(value string) (err error)
 
 	// Passes the list of neighbour addresses to the PN
+	// Can return the following errors:
+	// - NeighbourConnectionError when establishing RPC connection with a neighbour fails
 	SendNeighbours(ips []string) (err error)
 
 	// Exit the PN
@@ -38,8 +40,8 @@ type PaxosNodeInterface interface {
 }
 
 func (pn *PaxosNode) SendNeighbours(ips []string) (err error) {
-	pn.BecomeNeighbours(ips)
-	return nil
+	err = pn.BecomeNeighbours(ips)
+	return err
 }
 
 // A client will call this to mount to create a Paxos Node that
