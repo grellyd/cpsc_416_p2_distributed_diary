@@ -29,3 +29,10 @@ const (
 )
 
 const SLEEPTIME = 100 * time.Millisecond
+
+func (m *Message) Equals(m1 *Message) bool {
+	if m.ID == m1.ID && m.Value == m1.Value {
+		return true
+	}
+	return false
+}

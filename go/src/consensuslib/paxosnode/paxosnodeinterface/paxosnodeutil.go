@@ -15,15 +15,17 @@ import (
 //TODO[sharon]: update parameters as needed.
 func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	prepReq := pn.Proposer.CreatePrepareRequest()
-	numAccepted, err := pn.DisseminateRequest(prepReq) //TODO[sharon]: do error checking
+	numAccepted, err := pn.DisseminateRequest(prepReq) //TODO[sharon]: do error checking; Note: should return new value?
 
 	// If majority is not reached, sleep for a while and try again
+	// TODO: check whether should retry must return an error if no connection or something
 	pn.ShouldRetry(numAccepted, value)
 
 	accReq := pn.Proposer.CreateAcceptRequest(value)
 	numAccepted, err = pn.DisseminateRequest(accReq)
 
 	// If majority is not reached, sleep for a while and try again
+	// TODO: check whether should retry must return an error if no connection or something
 	pn.ShouldRetry(numAccepted, value)
 
 	accReq.Type = CONSENSUS
@@ -63,48 +65,55 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 			pn.Neighbours[ip] = neighbourConn
 		}
 	}
-	return nil
+	return err
 }
 
 // Disseminates a message to all neighbours. This includes prepare and accept requests.
 //TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
 func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err error) {
 	numAccepted = 0
+	respReq := prepReq
 	switch prepReq.Type {
 	case PREPARE:
 		for k, v := range pn.Neighbours {
-			e := v.Call("PaxosNodeInstance.ProcessPrepareRequest", prepReq, &prepReq)
+			e := v.Call("PaxosNodeInstance.ProcessPrepareRequest", prepReq, &respReq)
 			if e != nil {
 				delete(pn.Neighbours, k)
 				pn.RemoveNbrAddr(k)
 			} else {
 				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
 				// for now just a stub which increases count anyway
-				numAccepted++
+				if prepReq.Equals(&respReq) {
+					numAccepted++
+				}
 			}
 		}
 	case ACCEPT:
 		for k, v := range pn.Neighbours {
-			e := v.Call("PaxosNodeInstance.ProcessAcceptRequest", prepReq, &prepReq)
+			e := v.Call("PaxosNodeInstance.ProcessAcceptRequest", prepReq, &respReq)
 			if e != nil {
 				delete(pn.Neighbours, k)
 				pn.RemoveNbrAddr(k)
 			} else {
 				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
 				// for now just a stub which increases count anyway
-				numAccepted++
+				if prepReq.Equals(&respReq) {
+					numAccepted++
+				}
 			}
 		}
 	case CONSENSUS:
 		for k, v := range pn.Neighbours {
-			e := v.Call("PaxosNodeInstance.ProcessLearnRequest", prepReq, &prepReq)
+			e := v.Call("PaxosNodeInstance.ProcessLearnRequest", prepReq, &respReq)
 			if e != nil {
 				delete(pn.Neighbours, k)
 				pn.RemoveNbrAddr(k)
 			} else {
 				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
 				// for now just a stub which increases count anyway
-				numAccepted++
+				if prepReq.Equals(&respReq) {
+					numAccepted++
+				}
 			}
 		}
 	}
