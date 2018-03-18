@@ -134,6 +134,16 @@ func (pn *PaxosNode) IsMajority(n int) bool {
 	return false
 }
 
+// This method takes role of Learner, adds Accepted message to the map of accepted messages,
+// and notifies learner when the # for this particular message is a majority to write into the log
+// TODO: think about moving this responsibility to the learner
+func (pn *PaxosNode) CountForDecisions (m * Message) {
+	numSeen := pn.Learner.Decisions (m)
+	if pn.IsMajority(numSeen) {
+		pn.Learner.LearnValue(m) // this should write to the log TODO: expansion make learner return next round
+	}
+}
+
 // This method sets up the bi-directional RPC. A new PN joins the network and will
 // establish an RPC connection with each of the other PNs
 func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err error) {
@@ -163,3 +173,4 @@ func (pn *PaxosNode) RemoveNbrAddr(ip string) {
 		}
 	}
 }
+

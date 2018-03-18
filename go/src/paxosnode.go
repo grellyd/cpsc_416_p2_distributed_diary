@@ -42,3 +42,9 @@ func (pni *PaxosNodeInstance) ConnectRemoteNeighbour (addr string, r *bool) (err
 	err = pn.AcceptNeighbourConnection(addr, r)
 	return err
 }
+
+// RPC call from other node's Acceptor about value it accepted
+func (pni *PaxosNodeInstance) NotifyAboutAccepted (m * Message, r *bool) (err error) {
+	pn.CountForDecisions(m)
+	return err
+}
