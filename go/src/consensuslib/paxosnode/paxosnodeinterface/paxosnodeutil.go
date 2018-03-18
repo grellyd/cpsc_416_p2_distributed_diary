@@ -137,8 +137,8 @@ func (pn *PaxosNode) IsMajority(n int) bool {
 // This method takes role of Learner, adds Accepted message to the map of accepted messages,
 // and notifies learner when the # for this particular message is a majority to write into the log
 // TODO: think about moving this responsibility to the learner
-func (pn *PaxosNode) CountForDecisions (m * Message) {
-	numSeen := pn.Learner.Decisions (m)
+func (pn *PaxosNode) CountForNumAlreadyAccepted(m * Message) {
+	numSeen := pn.Learner.NumAlreadyAccepted(m)
 	if pn.IsMajority(numSeen) {
 		pn.Learner.LearnValue(m) // this should write to the log TODO: expansion make learner return next round
 	}

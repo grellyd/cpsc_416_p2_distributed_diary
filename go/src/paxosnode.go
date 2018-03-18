@@ -34,6 +34,9 @@ func (pni *PaxosNodeInstance) ProcessLearnRequest(m Message, r *Message) (err er
 	// TODO: after Larissa's implementation put something like:
 	// TODO: pn.Learner.Learn(m)
 	*r = pn.Acceptor.ProcessAccept(m)
+	if m.Equals(r) {
+		// TODO: add func to call RPC "NotifyAboutAccepted"
+	}
 	return nil
 }
 
@@ -45,6 +48,6 @@ func (pni *PaxosNodeInstance) ConnectRemoteNeighbour (addr string, r *bool) (err
 
 // RPC call from other node's Acceptor about value it accepted
 func (pni *PaxosNodeInstance) NotifyAboutAccepted (m * Message, r *bool) (err error) {
-	pn.CountForDecisions(m)
+	pn.CountForNumAlreadyAccepted(m)
 	return err
 }
