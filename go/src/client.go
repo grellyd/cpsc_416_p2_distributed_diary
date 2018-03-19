@@ -40,14 +40,19 @@ func main() {
 
 	// initializing a new PN
 	paxnode, err := paxosnodeinterface.MountPaxosNode(locAddr)
+	if paxnode.Neighbours == nil {
+		fmt.Println("Nil neighbours in client")
+	}
 	if err != nil {
 		fmt.Println("Couldn't create a PN")
 		return
 	}
 	pni := new(PaxosNodeInstance)
 	rpc.Register(pni)
+	go rpc.Accept(listener)
 	// connect PN to the neighboursbours
 	if len(neighbours) != 0 {
+		fmt.Println("Connect to the neighbour")
 		err = paxnode.BecomeNeighbours(neighbours)
 		if err != nil {
 			fmt.Println("Cannot connect to any neighboursbours, ping Server")
@@ -106,6 +111,7 @@ func (paxnodei *PaxosNodeInstance) ProcessLearnRequest(m Message, r *Message) (e
 
 // RPC call which is called by node that tries to connect
 func (paxnodei *PaxosNodeInstance) ConnectRemoteNeighbour(addr string, r *bool) (err error) {
+	fmt.Println("connecting my remote neighbour")
 	err = paxnode.AcceptNeighbourConnection(addr, r)
 	return err
 }

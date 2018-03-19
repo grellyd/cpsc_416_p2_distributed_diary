@@ -3,8 +3,8 @@ package paxosnodeinterface
 import (
 	. "consensuslib"
 	"fmt"
-	"log"
-	"net"
+	//"log"
+	//"net"
 	"net/rpc"
 	"time"
 )
@@ -47,7 +47,9 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 // Sets up bidirectional RPC with all neighbours. Neighbours list is passed to the
 // Paxos Node by the client.
 func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
-	pnAddr, err := net.ResolveTCPAddr("tcp", pn.Addr)
+	// Commented out since we already establish RPC listener at client.go
+	// Otherwise it will create different IP:Port combination unknown to the Server
+	/*pnAddr, err := net.ResolveTCPAddr("tcp", pn.Addr)
 	if err != nil {
 		fmt.Println("Error in resolving TCP address of PN")
 		log.Fatal(err)
@@ -55,7 +57,7 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 	conn, err := net.ListenTCP("tcp", pnAddr)
 
 	rpc.Register(pn)
-	go rpc.Accept(conn)
+	go rpc.Accept(conn)*/
 
 	for _, ip := range ips {
 		neighbourConn, err := rpc.Dial("tcp", ip)
@@ -63,13 +65,17 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 			return NeighbourConnectionError(ip)
 		}
 		connected := false
-		//neighbourConn.Call("PaxosNode.AcceptNeighbourConnection", pnAddr, &connected)
-		err = neighbourConn.Call("PaxosNodeInstance.ConnectRemoteNeighbour", pnAddr, &connected)
+		//err = neighbourConn.Call("PaxosNodeInstance.ConnectRemoteNeighbour", pnAddr, &connected)
+		err = neighbourConn.Call("PaxosNodeInstance.ConnectRemoteNeighbour", pn.Addr, &connected)
 
 		// Add ip to connectedNbrs and add the connection to Neighbours map
 		// after bidirectional RPC connection establishment is successful
 		if connected {
+			fmt.Println("[paxosnodeutil]: connected to the nbr")
 			pn.NbrAddrs = append(pn.NbrAddrs, ip)
+			if pn.Neighbours == nil {
+				pn.Neighbours = make(map[string]*rpc.Client,0)
+			}
 			pn.Neighbours[ip] = neighbourConn
 		}
 	}
@@ -85,6 +91,9 @@ func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err e
 		return NeighbourConnectionError(addr)
 	}
 	pn.NbrAddrs = append(pn.NbrAddrs, addr)
+	if pn.Neighbours == nil {
+		pn.Neighbours = make(map[string]*rpc.Client,0)
+	}
 	pn.Neighbours[addr] = neighbourConn
 	*result = true
 	return nil
