@@ -2,6 +2,7 @@ package learner
 
 import (
 	"consensuslib"
+	"fmt"
 )
 
 type Message = consensuslib.Message
@@ -12,7 +13,7 @@ type MessageAccepted struct {
 }
 
 type LearnerRole struct {
-	//Accepted map[uint64] *MessageAccepted // variable for mapping the accepted messages to count
+	Accepted map[uint64] *MessageAccepted // variable for mapping the accepted messages to count
 }
 
 func NewLearner() LearnerRole {
@@ -30,17 +31,21 @@ type LearnerInterface interface {
 }
 
 func (l *LearnerRole) NumAlreadyAccepted(m *Message) int {
-	/*if val, ok := l.Accepted[m.ID]; ok {
+	fmt.Println("[Learner] in NumAlreadyAccepted")
+	if l.Accepted == nil {
+		l.Accepted = make(map[uint64] *MessageAccepted, 0)
+	}
+	if val, ok := l.Accepted[m.ID]; ok {
 		val.Times++
 		return val.Times
 	}
 	ma := MessageAccepted{m, 1}
 	l.Accepted[m.ID] = &ma
-	return 1*/
 	return 1
 }
 
 func (l *LearnerRole) LearnValue (m *Message)  {
 	// stub
+	fmt.Println("Learning value ", m.Value)
 }
 
