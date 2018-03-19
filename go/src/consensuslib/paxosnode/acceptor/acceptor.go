@@ -2,6 +2,7 @@ package acceptor
 
 import (
 	. "consensuslib"
+	"fmt"
 )
 
 type AcceptorRole struct {
@@ -29,6 +30,7 @@ type AcceptorInterface interface {
 }
 
 func (acceptor *AcceptorRole) ProcessPrepare(msg Message) Message {
+	fmt.Println("[Acceptor] process prepare")
 	// no any value had been proposed or n'>n
 	// then n' == n and ID' == ID (basically same proposer distributed proposal twice)
 	if &acceptor.LastPromised == nil || msg.ID > acceptor.LastPromised.ID {
@@ -36,10 +38,12 @@ func (acceptor *AcceptorRole) ProcessPrepare(msg Message) Message {
 	} else if acceptor.LastPromised.ID == msg.ID && acceptor.LastPromised.FromProposerID == msg.FromProposerID {
 		acceptor.LastPromised = msg
 	}
+	fmt.Printf("[Acceptor] promised id: %d, val: %s \n", acceptor.LastPromised.ID, acceptor.LastPromised.Value)
 	return acceptor.LastPromised
 }
 
 func (acceptor *AcceptorRole) ProcessAccept(msg Message) Message {
+	fmt.Println("[Acceptor] process accept")
 	if &acceptor.LastAccepted == nil {
 		if msg.ID == acceptor.LastPromised.ID &&
 			msg.FromProposerID == acceptor.LastPromised.FromProposerID {
@@ -56,7 +60,7 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message) Message {
 			acceptor.LastAccepted = msg
 		}
 	}
-
+	fmt.Printf("[Acceptor] accepted id: %d, val: %s \n", acceptor.LastAccepted.ID, acceptor.LastAccepted.Value)
 	return acceptor.LastAccepted
 
 }

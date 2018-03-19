@@ -68,6 +68,13 @@ func main() {
 
 	// TODO: wait for the commands from the app
 
+	/////////////
+	// Testing the writing with the two clients
+
+	paxnode.WriteToPaxosNode("hello")
+
+	/////////////
+
 	fmt.Println("Sleeping now")
 	time.Sleep(15 * time.Second)
 }
@@ -97,8 +104,10 @@ func (paxnodei *PaxosNodeInstance) ProcessPrepareRequest(m Message, r *Message) 
 // RPC call received from other node to process accept request
 // If the request accepted, it gets disseminated to all the Learners in the Paxos NW
 func (paxnodei *PaxosNodeInstance) ProcessAcceptRequest(m Message, r *Message) (err error) {
+	fmt.Println("[Client] RPC processing accept request")
 	*r = paxnode.Acceptor.ProcessAccept(m)
 	if m.Equals(r) {
+		fmt.Println("[Client] saying accepted")
 		go paxnode.SayAccepted(r)
 	}
 	return nil
