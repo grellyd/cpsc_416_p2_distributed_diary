@@ -94,8 +94,13 @@ func (paxnodei *PaxosNodeInstance) ProcessPrepareRequest(m Message, r *Message) 
 	return nil
 }
 
+// RPC call received from other node to process accept request
+// If the request accepted, it gets disseminated to all the Learners in the Paxos NW
 func (paxnodei *PaxosNodeInstance) ProcessAcceptRequest(m Message, r *Message) (err error) {
 	*r = paxnode.Acceptor.ProcessAccept(m)
+	if m.Equals(r) {
+		go paxnode.SayAccepted(r)
+	}
 	return nil
 }
 
@@ -103,9 +108,6 @@ func (paxnodei *PaxosNodeInstance) ProcessLearnRequest(m Message, r *Message) (e
 	// TODO: after Larissa's implementation put something like:
 	// TODO: paxnode.Learner.Learn(m)
 	*r = paxnode.Acceptor.ProcessAccept(m)
-	if m.Equals(r) {
-		// TODO: add func to call RPC "NotifyAboutAccepted"
-	}
 	return nil
 }
 
