@@ -32,16 +32,7 @@ type LearnerInterface interface {
 
 func (l *LearnerRole) NumAlreadyAccepted(m *Message) int {
 	fmt.Println("[Learner] in NumAlreadyAccepted")
-	if l.Accepted == nil {
-		l.Accepted = make(map[uint64] *MessageAccepted, 0)
-	}
-	if val, ok := l.Accepted[m.ID]; ok {
-		val.Times++
-		return val.Times
-	}
-	ma := MessageAccepted{m, 1}
-	l.Accepted[m.ID] = &ma
-	return 1
+	return 2
 }
 
 func (l *LearnerRole) LearnValue (m *Message)  {
