@@ -3,6 +3,10 @@ package acceptor
 import (
 	. "consensuslib"
 	"fmt"
+	"os"
+	"encoding/json"
+	"net"
+	"strconv"
 )
 
 type AcceptorRole struct {
@@ -39,6 +43,7 @@ func (acceptor *AcceptorRole) ProcessPrepare(msg Message) Message {
 		acceptor.LastPromised = msg
 	}
 	fmt.Printf("[Acceptor] promised id: %d, val: %s \n", acceptor.LastPromised.ID, acceptor.LastPromised.Value)
+	saveIntoFile(acceptor.LastPromised)
 	return acceptor.LastPromised
 }
 
@@ -61,6 +66,52 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message) Message {
 		}
 	}
 	fmt.Printf("[Acceptor] accepted id: %d, val: %s \n", acceptor.LastAccepted.ID, acceptor.LastAccepted.Value)
+	saveIntoFile(acceptor.LastAccepted)
 	return acceptor.LastAccepted
 
+}
+
+// creates a log for acceptor in case of disconnection
+func saveIntoFile (msg Message) (err error) {
+	addr, errn := net.ResolveTCPAddr("tcp", msg.FromProposerID)
+	if errn != nil {
+		fmt.Println("[Acceptor] can't resolve own address")
+	}
+	fmt.Println("[Acceptor] saving message into file")
+	var path string
+	msgJson, err := json.Marshal(msg)
+	if err != nil {
+		fmt.Println("[Acceptor] errored on marshalling")
+		return err
+	}
+	var f *os.File
+	switch msg.Type {
+	case PREPARE:
+		path = strconv.Itoa(addr.Port) + "prepare.json"
+	case ACCEPT:
+		path = strconv.Itoa(addr.Port) + "accept.json"
+	}
+	if err != nil {
+		fmt.Println("[Acceptor] errored on reading path ", err)
+	}
+	if _, erro := os.Stat(path); os.IsNotExist(erro) {
+
+		f, err = os.Create(path)
+		if err != nil {
+			fmt.Println("[Acceptor] errored on creating file ", err)
+		}
+
+	} else {
+		f, err = os.OpenFile(path, os.O_RDWR, 0644)
+		if err != nil {
+			fmt.Println("[Acceptor] errored on opening file ", err)
+		}
+	}
+	defer f.Close()
+	_, err = f.Write(msgJson)
+	if err != nil {
+		fmt.Println("[Acceptor] errored on writing into file ", err)
+	}
+	f.Close()
+	return err
 }

@@ -212,6 +212,9 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 
 // Notifies all learners that request was accepted
 func (pn *PaxosNode) SayAccepted (m *Message) {
+	// first, tell to own learner
+	pn.CountForNumAlreadyAccepted(m)
+	// then to all other nodes' learners
 	var counted bool
 	for k, v := range pn.Neighbours {
 		e := v.Call("PaxosNodeInstance.NotifyAboutAccepted", m, &counted)
