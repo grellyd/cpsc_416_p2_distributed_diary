@@ -69,7 +69,6 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 			return NeighbourConnectionError(ip)
 		}
 		connected := false
-		//err = neighbourConn.Call("PaxosNodeInstance.ConnectRemoteNeighbour", pnAddr, &connected)
 		err = neighbourConn.Call("PaxosNodeInstance.ConnectRemoteNeighbour", pn.Addr, &connected)
 
 		// Add ip to connectedNbrs and add the connection to Neighbours map
@@ -86,6 +85,35 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 	return nil
 }
 
+func (pn *PaxosNode) SetInitialLog() (err error) {
+	logs := make(map[string]int, 0)
+	for k, v := range pn.Neighbours {
+		temp := make([]Message, 0)
+		e := v.Call("PaxosNodeInstance.ReadFromLearner", "placeholder", &temp)
+		if e != nil {
+			delete(pn.Neighbours, k)
+			pn.RemoveNbrAddr(k)
+			continue
+		}
+		latestMsg := temp[len(temp)-1].Value
+		if count, ok := logs[latestMsg]; ok {
+			count++
+			logs[latestMsg] = count
+			// Once a majority is reached, set the initial log state to be the majority log
+			if pn.IsMajority(count) {
+				pn.Learner.InitializeLog(temp)
+			}
+		} else {
+			logs[latestMsg] = 1
+		}
+	}
+	return nil
+}
+
+func (pn *PaxosNode) GetLog() (log []Message, err error) {
+	log, err = pn.Learner.GetCurrentLog()
+	return log, err
+}
 
 // This method sets up the bi-directional RPC. A new PN joins the network and will
 // establish an RPC connection with each of the other PNs

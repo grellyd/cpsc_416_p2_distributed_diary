@@ -35,12 +35,19 @@ type PaxosNodeInterface interface {
 	// - NeighbourConnectionError when establishing RPC connection with a neighbour fails
 	SendNeighbours(ips []string) (err error)
 
+	LearnLatestValueFromNeighbours() (err error)
+
 	// Exit the PN
 	UnmountPaxosNode() (err error)
 }
 
 func (pn *PaxosNode) SendNeighbours(ips []string) (err error) {
 	err = pn.BecomeNeighbours(ips)
+	return err
+}
+
+func (pn *PaxosNode) LearnLatestValueFromNeighbours() (err error) {
+	err = pn.SetInitialLog()
 	return err
 }
 

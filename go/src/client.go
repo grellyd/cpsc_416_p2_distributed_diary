@@ -47,13 +47,19 @@ func main() {
 		fmt.Println("Couldn't create a PN")
 		return
 	}
+
 	pni := new(PaxosNodeInstance)
 	rpc.Register(pni)
 	go rpc.Accept(listener)
-	// connect PN to the neighboursbours
+
+	// connect PN to the neighbours
 	if len(neighbours) != 0 {
 		fmt.Println("Connect to the neighbour")
+
+		// TODO[Harryson]: Revist. Shouldn't this be paxnode.SendNeighbours?
+		// TODO: Otherwise we are not using the interface
 		err = paxnode.BecomeNeighbours(neighbours)
+
 		if err != nil {
 			fmt.Println("Cannot connect to any neighboursbours, ping Server")
 			// ping server here whether we're alive
@@ -63,11 +69,13 @@ func main() {
 				fmt.Println("Client disconnected from the net")
 				return
 			}
+		} else {
+			// If we have neighbours, learn the state of the log from them
+			err = paxnode.LearnLatestValueFromNeighbours()
 		}
 	}
 
 	// TODO: wait for the commands from the app
-
 	/////////////
 	// Testing the writing with the two clients
 
@@ -131,4 +139,12 @@ func (paxnodei *PaxosNodeInstance) ConnectRemoteNeighbour(addr string, r *bool) 
 func (paxnodei *PaxosNodeInstance) NotifyAboutAccepted(m *Message, r *bool) (err error) {
 	paxnode.CountForNumAlreadyAccepted(m)
 	return err
+}
+
+// RPC call from a new PN that joined the network and needs to read
+// the state of the log from every other PN's learner
+func (paxnodei *PaxosNodeInstance) ReadFromLearner(placeholder string, log *[]Message) (err error) {
+	*log, err = paxnode.GetLog()
+	// return no errors, for now
+	return nil
 }
