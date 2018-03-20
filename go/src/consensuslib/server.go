@@ -1,7 +1,6 @@
 package consensuslib
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -9,6 +8,7 @@ import (
 	"os"
 	"sync"
 	"time"
+	"consensuslib/errors"
 )
 
 type Server struct {
@@ -69,7 +69,7 @@ func (s *Server) Register(addr string, res *[]string) error {
 	defer allUsers.Unlock()
 
 	if _, exists := allUsers.all[addr]; exists {
-		return AddressAlreadyRegisteredError(addr)
+		return errors.AddressAlreadyRegisteredError(addr)
 	}
 	allUsers.all[addr] = &User{
 		addr,
@@ -100,7 +100,8 @@ func (s *Server) HeartBeat(addr string, _ignored *bool) error {
 	defer allUsers.Unlock()
 
 	if _, ok := allUsers.all[addr]; !ok {
-		return errors.New("Server: unknown key")
+		// TODO: check right chanage
+		return errors.UnknownKeyError("")
 	}
 
 	allUsers.all[addr].Heartbeat = time.Now().UnixNano()

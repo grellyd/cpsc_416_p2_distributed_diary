@@ -1,8 +1,10 @@
 package proposer
 
 import (
-	. "consensuslib"
+	"consensuslib/message"
 )
+
+type Message = message.Message
 
 type ProposerRole struct {
 	proposerID            string
@@ -31,7 +33,7 @@ func (proposer *ProposerRole) CreatePrepareRequest() Message {
 	proposer.messageID++
 	prepareRequest := Message{
 		ID:             proposer.messageID,
-		Type:           PREPARE,
+		Type:           message.PREPARE,
 		Value:          "",
 		FromProposerID: proposer.proposerID,
 	}
@@ -41,7 +43,7 @@ func (proposer *ProposerRole) CreatePrepareRequest() Message {
 func (proposer *ProposerRole) CreateAcceptRequest(value string) Message {
 	acceptRequest := Message{
 		ID:             proposer.messageID,
-		Type:           ACCEPT,
+		Type:           message.ACCEPT,
 		Value:          value,
 		FromProposerID: proposer.proposerID,
 	}

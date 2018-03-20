@@ -1,4 +1,4 @@
-package consensuslib
+package message
 
 import "time"
 

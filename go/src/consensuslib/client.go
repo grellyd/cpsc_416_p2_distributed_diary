@@ -1,18 +1,16 @@
 package consensuslib
 
 import (
-	"consensuslib"
 	"consensuslib/paxosnode/paxosnodeinterface"
 	"fmt"
-	"net"
 	"net/rpc"
-	"os"
 	"time"
+	"consensuslib/message"
 )
 
 type PaxosNodeInstance int
 
-type Message = consensuslib.Message
+type Message = message.Message
 
 var locAddr string
 var serverConnector *rpc.Client

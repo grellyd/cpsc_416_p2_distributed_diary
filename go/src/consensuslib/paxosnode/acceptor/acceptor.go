@@ -1,9 +1,11 @@
 package acceptor
 
 import (
-	. "consensuslib"
 	"fmt"
+	"consensuslib/message"
 )
+
+type Message = message.Message
 
 type AcceptorRole struct {
 	LastPromised Message

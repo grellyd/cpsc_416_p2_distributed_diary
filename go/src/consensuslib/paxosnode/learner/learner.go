@@ -1,11 +1,12 @@
 package learner
 
 import (
-	"consensuslib"
 	"fmt"
+	"consensuslib/message"
 )
 
-type Message = consensuslib.Message
+type Message = message.Message
+
 type MessageAccepted struct {
 	M *Message
 	Times int
