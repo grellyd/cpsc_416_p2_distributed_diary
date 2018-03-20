@@ -16,9 +16,14 @@ func main() {
 	fmt.Println("testing server")
 	addr := "127.0.0.1:12345"
 	server, err := consensuslib.NewServer(addr)
+	checkError(err)
+	err = server.Serve()
+	checkError(err)
+}
+
+func checkError(err error) {
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	server.Serve()
 }
