@@ -1,4 +1,4 @@
-package main
+package consensuslib
 
 import (
 	"errors"
@@ -11,7 +11,10 @@ import (
 	"time"
 )
 
-type Nserver int
+type Server struct {
+	rpcServer *rpc.Server
+	listener net.Listener
+}
 
 type User struct {
 	Address   string
@@ -23,12 +26,6 @@ type AllUsers struct {
 	all map[string]*User
 }
 
-/*type ClientSettings struct {
-	Leader bool
-	Teammates []string
-	Enemies []string
-}*/
-
 type HeartBeat uint32
 
 var (
@@ -38,14 +35,36 @@ var (
 	allUsers  AllUsers    = AllUsers{all: make(map[string]*User)}
 )
 
-type AddressAlreadyRegisteredError string
-
-func (e AddressAlreadyRegisteredError) Error() string {
-	return fmt.Sprintf("BlockArt server: address already registered [%s]", string(e))
+// Creates a new server ready to register paxosnodes
+// TODO: inject logger
+func NewServer(addr string) (server *Server, err error) {
+	server = &Server{
+		rpcServer: rpc.NewServer(),
+	}
+	server.rpcServer.Register(server)
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		// TODO: enhance error
+		return nil, err
+	}
+	server.listener = listener
+	fmt.Println("Server started at ", addr)
+	return server, nil
 }
 
+func (s *Server) Serve() error {
+	for {
+		conn, err := s.listener.Accept()
+		if err != nil {
+			return fmt.Errorf("unable to accept connection: %s", err)
+		}
+		go s.rpcServer.ServeConn(conn)
+	}
+}
+
+
 // Registers a client with the server
-func (s *Nserver) Register(addr string, res *[]string) error {
+func (s *Server) Register(addr string, res *[]string) error {
 	allUsers.Lock()
 	defer allUsers.Unlock()
 
@@ -76,7 +95,7 @@ func (s *Nserver) Register(addr string, res *[]string) error {
 }
 
 // from proj1 server.go implementation by Ivan Beschastnikh
-func (s *Nserver) HeartBeat(addr string, _ignored *bool) error {
+func (s *Server) HeartBeat(addr string, _ignored *bool) error {
 	allUsers.Lock()
 	defer allUsers.Unlock()
 
@@ -89,7 +108,7 @@ func (s *Nserver) HeartBeat(addr string, _ignored *bool) error {
 	return nil
 }
 
-func (s *Nserver) CheckAlive(addr string, alive *bool) error {
+func (s *Server) CheckAlive(addr string, alive *bool) error {
 	*alive = true
 	return nil
 }
@@ -110,23 +129,7 @@ func monitor(k string, heartBeatInterval time.Duration) {
 	}
 }
 
-func main() {
-	// register entity required to recieve RPC calls
-	nserver := new(Nserver)
-	server := rpc.NewServer()
-	server.Register(nserver)
-	servAddr := "127.0.0.1:12345"
-	l, e := net.Listen("tcp", servAddr)
-	checkError(e, "Connection error")
-	fmt.Println("Server started at ", servAddr)
-
-	for {
-		conn, _ := l.Accept()
-		go server.ServeConn(conn)
-	}
-
-}
-
+// TODO: Not fail fatal. Pass up to caller
 func checkError(e error, m string) {
 	if e != nil {
 		errLog.Fatalf("%s, err = %s\n", m, e.Error())

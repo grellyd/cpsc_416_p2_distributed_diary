@@ -8,8 +8,16 @@ package main
 
 import (
 	"fmt"
+	"consensuslib"
 )
 
 func main() {
 	fmt.Println("testing server")
+	addr := "127.0.0.1:12345"
+	server, err := consensuslib.NewServer(addr)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	server.Serve()
 }

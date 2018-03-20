@@ -1,4 +1,4 @@
-package main
+package consensuslib
 
 import (
 	"consensuslib"
@@ -18,6 +18,7 @@ var locAddr string
 var serverConnector *rpc.Client
 var paxnode paxosnodeinterface.PaxosNode
 
+/*
 func main() {
 	fmt.Println("start")
 	args := os.Args[1:]
@@ -86,6 +87,7 @@ func main() {
 	fmt.Println("Sleeping now")
 	time.Sleep(15 * time.Second)
 }
+*/
 
 func doEvery(d time.Duration, f func(time.Time) error) error {
 	for x := range time.Tick(d) {
