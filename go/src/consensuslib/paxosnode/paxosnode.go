@@ -119,7 +119,7 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 			return errors.NeighbourConnectionError(ip)
 		}
 		connected := false
-		err = neighbourConn.Call("PaxosNodeInstance.ConnectRemoteNeighbour", pn.Addr, &connected)
+		err = neighbourConn.Call("PaxosNodeRPCWrapper.ConnectRemoteNeighbour", pn.Addr, &connected)
 
 		// Add ip to connectedNbrs and add the connection to Neighbours map
 		// after bidirectional RPC connection establishment is successful
@@ -139,7 +139,7 @@ func (pn *PaxosNode) SetInitialLog() (err error) {
 	logs := make(map[string]int, 0)
 	for k, v := range pn.Neighbours {
 		temp := make([]Message, 0)
-		e := v.Call("PaxosNodeInstance.ReadFromLearner", "placeholder", &temp)
+		e := v.Call("PaxosNodeRPCWrapper.ReadFromLearner", "placeholder", &temp)
 		if e != nil {
 			delete(pn.Neighbours, k)
 			pn.RemoveNbrAddr(k)
@@ -200,7 +200,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 	case message.PREPARE:
 		fmt.Println("[paxosnodeutil] PREPARE")
 		for k, v := range pn.Neighbours {
-			e := v.Call("PaxosNodeInstance.ProcessPrepareRequest", prepReq, &respReq)
+			e := v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
 			if e != nil {
 				delete(pn.Neighbours, k)
 				pn.RemoveNbrAddr(k)
@@ -220,7 +220,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 	case message.ACCEPT:
 		fmt.Println("[paxosnodeutil] ACCEPT")
 		for k, v := range pn.Neighbours {
-			e := v.Call("PaxosNodeInstance.ProcessAcceptRequest", prepReq, &respReq)
+			e := v.Call("PaxosNodeRPCWrapper.ProcessAcceptRequest", prepReq, &respReq)
 			if e != nil {
 				delete(pn.Neighbours, k)
 				pn.RemoveNbrAddr(k)
@@ -241,7 +241,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		}
 	case message.CONSENSUS:
 		for k, v := range pn.Neighbours {
-			e := v.Call("PaxosNodeInstance.ProcessLearnRequest", prepReq, &respReq)
+			e := v.Call("PaxosNodeRPCWrapper.ProcessLearnRequest", prepReq, &respReq)
 			if e != nil {
 				delete(pn.Neighbours, k)
 				pn.RemoveNbrAddr(k)
@@ -267,7 +267,7 @@ func (pn *PaxosNode) SayAccepted (m *Message) {
 	// then to all other nodes' learners
 	var counted bool
 	for k, v := range pn.Neighbours {
-		e := v.Call("PaxosNodeInstance.NotifyAboutAccepted", m, &counted)
+		e := v.Call("PaxosNodeRPCWrapper.NotifyAboutAccepted", m, &counted)
 		if e != nil {
 			delete(pn.Neighbours, k)
 			pn.RemoveNbrAddr(k)
