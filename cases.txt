@@ -1,0 +1,3 @@
+Temporary disconnection between two clients
+-create a 'Do not call list' for each client, show that system still runs
+-restore connection and show the system still proceeds
