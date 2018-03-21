@@ -2,12 +2,10 @@ package paxosnode
 
 import (
 	"fmt"
-	"consensuslib/paxosnode/paxosnodeinterface"
 	"consensuslib/message"
 )
 
 type Message = message.Message
-type PaxosNode = paxosnodeinterface.PaxosNode
 
 type PaxosNodeRPCWrapper struct {
 	paxosNode *PaxosNode

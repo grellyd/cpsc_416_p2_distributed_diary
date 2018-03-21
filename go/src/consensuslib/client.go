@@ -1,7 +1,6 @@
 package consensuslib
 
 import (
-	"consensuslib/paxosnode/paxosnodeinterface"
 	"consensuslib/paxosnode"
 	"fmt"
 	"net/rpc"
@@ -18,7 +17,7 @@ type Client struct {
 	listener net.Listener
 	serverRPCClient *rpc.Client
 
-	paxosNode *paxosnodeinterface.PaxosNode
+	paxosNode *paxosnode.PaxosNode
 	paxosNodeRPCWrapper *PaxosNodeRPCWrapper
 	neighbors []string
 }
@@ -42,7 +41,7 @@ func NewClient(localAddr string, heartbeatRate time.Duration) (client *Client, e
 	fmt.Println("Local addr ", client.localAddr)
 
 	// create the paxosnode
-	client.paxosNode, err = paxosnodeinterface.NewPaxosNode(client.localAddr)
+	client.paxosNode, err = paxosnode.NewPaxosNode(client.localAddr)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create a paxos node: %s", err)
 	}
