@@ -1,9 +1,8 @@
 package tests
 
 import (
-	"consensuslib"
+	"distributeddiaryapp/tests/util"
 	"testing"
-	"time"
 )
 
 func TestSingleClientReadWrite(t *testing.T) {
@@ -19,17 +18,9 @@ func TestSingleClientReadWrite(t *testing.T) {
 			Data: "Voldemort Rocks",
 		},
 	}
-	server, err := consensuslib.NewServer(serverAddr)
-	if err != nil {
-		t.Errorf("Bad Exit: \"TestSingleClientReadWrite()\" produced err: %v", err)
-	}
-	go server.Serve()
+	util.SetupServer(serverAddr)
 	for _, test := range tests {
-		client, err := consensuslib.NewClient(localAddr, 1*time.Millisecond)
-		if err != nil {
-			t.Errorf("Bad Exit: \"TestSingleClientReadWrite(%v)\" produced err: %v", test, err)
-		}
-		err = client.Connect(serverAddr)
+		client, err := util.SetupClient(serverAddr, localAddr)
 		if err != nil {
 			t.Errorf("Bad Exit: \"TestSingleClientReadWrite(%v)\" produced err: %v", test, err)
 		}

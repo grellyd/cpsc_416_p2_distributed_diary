@@ -23,6 +23,7 @@ func main() {
 	// BEGIN Test Code
 	// (change in here to run when every app is started)
 
+	/*
 	isAlive, err := client.IsAlive()
 	checkError(err)
 	fmt.Printf("Alive: %v\n", isAlive)
@@ -37,6 +38,7 @@ func main() {
 	value, err = client.Read()
 	checkError(err)
 	fmt.Printf("Reading: '%s'\n", value)
+	*/
 
 	// END Test Code
 
@@ -71,9 +73,14 @@ func serveCli(client *consensuslib.Client) {
 			fmt.Printf("Reading: '%s'\n", value)
 		case cli.WRITE:
 			value := ""
-			for _, s := range *command.Data {
-				// TODO: removes spaces
-				value += s
+			for i, s := range *command.Data {
+				// add spaces
+				if i != len(*command.Data) - 1 {
+					value += s + " "
+				} else {
+					value += s
+				}
+
 			}
 			err := client.Write(value)
 			checkError(err)
