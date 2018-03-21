@@ -1,30 +1,29 @@
 package cli
 
 import (
-	"strings"
-	"fmt"
 	"bufio"
+	"fmt"
 	"os"
 	"regexp"
+	"strings"
 )
 
 const (
 	ALIVE = "alive"
-	EXIT = "exit"
-	READ = "read"
+	EXIT  = "exit"
+	READ  = "read"
 	WRITE = "write"
-	HELP = "help"
+	HELP  = "help"
 )
 
 type Command struct {
 	Command string
-	Data *[]string
+	Data    *[]string
 }
 
 var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ])?|help|exit)")
 
-var helpString = 
-`
+var helpString = `
 ===========================================
 The Chamber of Secrets: A Distributed Diary
 ===========================================
@@ -91,4 +90,4 @@ func readFromStdin(reader *bufio.Reader) string {
 	in, _ := reader.ReadBytes('\n')
 	in = in[:len(in)-1]
 	return string(in)
-} 
+}

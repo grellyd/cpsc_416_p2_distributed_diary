@@ -10,11 +10,11 @@
 package main
 
 import (
-	"fmt"
-	"time"
-	"os"
 	"consensuslib"
 	"distributeddiaryapp/cli"
+	"fmt"
+	"os"
+	"time"
 )
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 	checkError(err)
 	fmt.Printf("Reading: '%s'\n", value)
 	serveCli(client)
-	
+
 }
 
 func serveCli(client *consensuslib.Client) {
@@ -58,7 +58,7 @@ func serveCli(client *consensuslib.Client) {
 			fmt.Printf("Reading: '%s'\n", value)
 		case cli.WRITE:
 			value := ""
-			for _, s := range(*command.Data) {
+			for _, s := range *command.Data {
 				// TODO: removes spaces
 				value += s
 			}
@@ -73,7 +73,7 @@ func serveCli(client *consensuslib.Client) {
 func parseArgs(args []string) (serverAddr string, localAddr string, err error) {
 	serverAddr = args[1]
 	localAddr = args[2]
-	return serverAddr, localAddr,  nil
+	return serverAddr, localAddr, nil
 }
 
 func checkError(err error) {

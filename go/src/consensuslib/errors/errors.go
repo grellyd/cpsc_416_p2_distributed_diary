@@ -1,8 +1,8 @@
 package errors
 
 import (
-	"fmt"
 	"consensuslib/message"
+	"fmt"
 )
 
 type InvalidMessageTypeError message.Message

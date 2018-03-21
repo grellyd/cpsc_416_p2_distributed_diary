@@ -1,8 +1,8 @@
 package paxosnode
 
 import (
-	"fmt"
 	"consensuslib/message"
+	"fmt"
 )
 
 type Message = message.Message

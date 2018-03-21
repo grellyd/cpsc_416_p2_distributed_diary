@@ -1,14 +1,14 @@
 package paxosnode
 
 import (
-	"fmt"
-	"net/rpc"
-	"time"
-	"consensuslib/message"
 	"consensuslib/errors"
+	"consensuslib/message"
 	"consensuslib/paxosnode/acceptor"
 	"consensuslib/paxosnode/learner"
 	"consensuslib/paxosnode/proposer"
+	"fmt"
+	"net/rpc"
+	"time"
 )
 
 // Type Aliases
@@ -127,7 +127,7 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 			fmt.Println("[paxosnodeutil]: connected to the nbr")
 			pn.NbrAddrs = append(pn.NbrAddrs, ip)
 			if pn.Neighbours == nil {
-				pn.Neighbours = make(map[string]*rpc.Client,0)
+				pn.Neighbours = make(map[string]*rpc.Client, 0)
 			}
 			pn.Neighbours[ip] = neighbourConn
 		}
@@ -174,7 +174,7 @@ func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err e
 	}
 	pn.NbrAddrs = append(pn.NbrAddrs, addr)
 	if pn.Neighbours == nil {
-		pn.Neighbours = make(map[string]*rpc.Client,0)
+		pn.Neighbours = make(map[string]*rpc.Client, 0)
 	}
 	pn.Neighbours[addr] = neighbourConn
 	*result = true
@@ -261,7 +261,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 }
 
 // Notifies all learners that request was accepted
-func (pn *PaxosNode) SayAccepted (m *Message) {
+func (pn *PaxosNode) SayAccepted(m *Message) {
 	// first, tell to own learner
 	pn.CountForNumAlreadyAccepted(m)
 	// then to all other nodes' learners
@@ -291,7 +291,7 @@ func (pn *PaxosNode) IsMajority(n int) bool {
 // This method takes role of Learner, adds Accepted message to the map of accepted messages,
 // and notifies learner when the # for this particular message is a majority to write into the log
 // TODO: think about moving this responsibility to the learner
-func (pn *PaxosNode) CountForNumAlreadyAccepted(m * Message) {
+func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
 	fmt.Println("[paxosnodeutil] in CountForNumAlreadyAccepted")
 	numSeen := pn.Learner.NumAlreadyAccepted(m)
 	if pn.IsMajority(numSeen) {

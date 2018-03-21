@@ -3,25 +3,25 @@ package consensuslib
 import (
 	"consensuslib/paxosnode"
 	"fmt"
-	"net/rpc"
-	"net"
-	"time"
 	"log"
+	"net"
+	"net/rpc"
+	"time"
 )
 
 type PaxosNodeRPCWrapper = paxosnode.PaxosNodeRPCWrapper
 
 type Client struct {
-	localAddr string
+	localAddr     string
 	heartbeatRate time.Duration
-	
-	listener net.Listener
+
+	listener        net.Listener
 	serverRPCClient *rpc.Client
 
-	paxosNode *paxosnode.PaxosNode
+	paxosNode           *paxosnode.PaxosNode
 	paxosNodeRPCWrapper *PaxosNodeRPCWrapper
-	neighbors []string
-	
+	neighbors           []string
+
 	errLog *log.Logger
 	outLog *log.Logger
 }
@@ -93,7 +93,7 @@ func (c *Client) Read() (value string, err error) {
 		return "", fmt.Errorf("error while getting the log: %s", err)
 	}
 	fmt.Printf("log: '%v'\n", log)
-	for _, m := range(log) {
+	for _, m := range log {
 		value += m.Value
 	}
 	return value, nil

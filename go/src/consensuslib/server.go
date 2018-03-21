@@ -1,6 +1,7 @@
 package consensuslib
 
 import (
+	"consensuslib/errors"
 	"fmt"
 	"log"
 	"net"
@@ -8,14 +9,13 @@ import (
 	"os"
 	"sync"
 	"time"
-	"consensuslib/errors"
 )
 
 type Server struct {
 	rpcServer *rpc.Server
-	listener net.Listener
-	errLog *log.Logger
-	outLog *log.Logger
+	listener  net.Listener
+	errLog    *log.Logger
+	outLog    *log.Logger
 }
 
 // TODO: @grellyd needs clarification on the two User structs and their purpose
@@ -67,7 +67,6 @@ func (s *Server) Serve() error {
 		go s.rpcServer.ServeConn(conn)
 	}
 }
-
 
 // Registers a client with the server
 func (s *Server) Register(addr string, res *[]string) error {

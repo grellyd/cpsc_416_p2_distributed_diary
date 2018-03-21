@@ -1,21 +1,20 @@
 package learner
 
 import (
-	"fmt"
 	"consensuslib/message"
+	"fmt"
 )
 
 type Message = message.Message
 
 type MessageAccepted struct {
-	M *Message
+	M     *Message
 	Times int
-
 }
 
 type LearnerRole struct {
-	Accepted map[uint64] *MessageAccepted // variable for mapping the accepted messages to count
-	Log []Message
+	Accepted map[uint64]*MessageAccepted // variable for mapping the accepted messages to count
+	Log      []Message
 }
 
 // TODO: Is this struct necessary?
@@ -31,7 +30,6 @@ type LearnerInterface interface {
 	GetCurrentLog() (log []Message, err error)
 
 	LearnConsensusValue() (learned bool, err error)
-
 }
 
 func NewLearner() LearnerRole {
@@ -53,8 +51,7 @@ func (l *LearnerRole) NumAlreadyAccepted(m *Message) int {
 	return 2
 }
 
-func (l *LearnerRole) LearnValue (m *Message)  {
+func (l *LearnerRole) LearnValue(m *Message) {
 	// stub
 	fmt.Println("Learning value ", m.Value)
 }
-

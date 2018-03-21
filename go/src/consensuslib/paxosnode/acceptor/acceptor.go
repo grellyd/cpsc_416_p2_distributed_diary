@@ -1,11 +1,11 @@
 package acceptor
 
 import (
-	"fmt"
 	"consensuslib/message"
-	"os"
 	"encoding/json"
+	"fmt"
 	"net"
+	"os"
 	"strconv"
 )
 
@@ -74,7 +74,7 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message) Message {
 }
 
 // creates a log for acceptor in case of disconnection
-func saveIntoFile (msg Message) (err error) {
+func saveIntoFile(msg Message) (err error) {
 	addr, errn := net.ResolveTCPAddr("tcp", msg.FromProposerID)
 	if errn != nil {
 		fmt.Println("[Acceptor] can't resolve own address")

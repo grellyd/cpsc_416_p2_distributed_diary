@@ -10,9 +10,9 @@
 package main
 
 import (
+	"consensuslib"
 	"fmt"
 	"os"
-	"consensuslib"
 )
 
 func main() {
