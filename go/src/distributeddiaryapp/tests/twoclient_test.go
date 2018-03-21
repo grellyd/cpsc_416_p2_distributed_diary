@@ -22,6 +22,11 @@ func TestTwoClientsReadWrite(t *testing.T) {
 			DataC1: "No, Voldemort Rocks",
 		},
 	}
+	server, err := consensuslib.NewServer(serverAddr)
+	if err != nil {
+		t.Errorf("Bad Exit: \"TestTwoClientsReadWrite()\" produced err: %v", err)
+	}
+	go server.Serve()
 	for _, test := range tests {
 		client0, err := setupClient(serverAddr, localAddr, 1*time.Millisecond)
 		if err != nil {
