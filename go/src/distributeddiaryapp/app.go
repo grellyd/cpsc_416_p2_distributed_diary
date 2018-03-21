@@ -4,6 +4,9 @@
 // Or do `go install` then `distributeddiaryapp` to run the binary
 // The last is @grellyd preferred for ease, but requires you to add `go/bin` to your $PATH variable
 
+// Go Run Example: `go run distributeddiaryapp/app.go 127.0.0.1:12345 127.0.0.1:0`
+// Installed Run example: `distributeddiaryapp 127.0.0.1:12345 127.0.0.1:0`
+
 package main
 
 import (
