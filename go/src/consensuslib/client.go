@@ -104,7 +104,7 @@ func (c *Client) Read() (value string, err error) {
 
 // TODO: Check for error
 func (c *Client) Write(value string) (err error) {
-	c.paxosNode.WriteToPaxosNode("hello")
+	c.paxosNode.WriteToPaxosNode(value)
 	return nil
 }
 
