@@ -33,6 +33,9 @@ type AcceptorInterface interface {
 	// REQUIRES: a message with a value submitted at proposer;
 	// EFFECTS: responds with the latest promised/accepted message or with the nil if none
 	ProcessAccept(msg Message) Message
+
+	// EFFECTS: returns the last accepted message if any
+	RestoreFromBackup(port string)
 }
 
 func (acceptor *AcceptorRole) ProcessPrepare(msg Message) Message {
@@ -71,6 +74,30 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message) Message {
 	saveIntoFile(acceptor.LastAccepted)
 	return acceptor.LastAccepted
 
+}
+
+// TODO: since we're testing on the same machine use a port as a reference point
+// TODO: in the last version this method will have nothing, because we'll be running
+// code on different machines
+func (acceptor *AcceptorRole) RestoreFromBackup(port string) {
+	path := port + "prepare.json"
+	f, err := os.Open(path)
+	if err != nil {
+		fmt.Println("[Acceptor] no such file exist, no messages were prepared ", err)
+	}
+	buf, err := ioutil.ReadAll(f)
+	err = json.Unmarshal(buf, &acceptor.LastPromised)
+	if err != nil {
+		fmt.Println("[Acceptor] error on unmarshalling promise ", err)
+	}
+	f.Close()
+	path = port + "accept.json"
+	f, err = os.Open(path)
+	buf, err = ioutil.ReadAll(f)
+	err = json.Unmarshal(buf, &acceptor.LastAccepted)
+	if err != nil {
+		fmt.Println("[Acceptor] error on unmarshalling accept ", err)
+	}
 }
 
 // creates a log for acceptor in case of disconnection
