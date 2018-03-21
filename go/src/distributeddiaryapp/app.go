@@ -18,27 +18,42 @@ import (
 )
 
 func main() {
-	fmt.Println("testing app")
+	client := setup()
+
+	// BEGIN Test Code
+	// (change in here to run when every app is started)
+
+	isAlive, err := client.IsAlive()
+	checkError(err)
+	fmt.Printf("Alive: %v\n", isAlive)
+	
+	value, err := client.Read()
+	checkError(err)
+	fmt.Printf("Reading: '%s'\n", value)
+
+	err = client.Write("Hello")
+	checkError(err)
+
+	value, err = client.Read()
+	checkError(err)
+	fmt.Printf("Reading: '%s'\n", value)
+
+
+	// END Test Code
+
+	serveCli(client)
+}
+
+func setup()  *consensuslib.Client {
 	serverAddr, localAddr, err := parseArgs(os.Args)
 	checkError(err)
 	client, err := consensuslib.NewClient(localAddr, 1*time.Millisecond)
 	checkError(err)
 	err = client.Connect(serverAddr)
 	checkError(err)
-	isAlive, err := client.IsAlive()
-	checkError(err)
-	value, err := client.Read()
-	fmt.Printf("Alive: %v\n", isAlive)
-	checkError(err)
-	fmt.Printf("Reading: '%s'\n", value)
-	err = client.Write("Hello")
-	checkError(err)
-	value, err = client.Read()
-	checkError(err)
-	fmt.Printf("Reading: '%s'\n", value)
-	serveCli(client)
-
+	return client
 }
+
 
 func serveCli(client *consensuslib.Client) {
 	for {
