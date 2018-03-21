@@ -20,7 +20,7 @@ func (e NeighbourConnectionError) Error() string {
 type AddressAlreadyRegisteredError string
 
 func (e AddressAlreadyRegisteredError) Error() string {
-	return fmt.Sprintf("BlockArt server: address already registered [%s]", string(e))
+	return fmt.Sprintf("Application server: address already registered [%s]", string(e))
 }
 
 type UnknownKeyError string
