@@ -2,149 +2,108 @@ package consensuslib
 
 import (
 	"consensuslib/paxosnode/paxosnodeinterface"
+	"consensuslib/paxosnode"
 	"fmt"
 	"net/rpc"
+	"net"
 	"time"
-	"consensuslib/message"
 )
 
-type PaxosNodeInstance int
+type PaxosNodeRPCWrapper = paxosnode.PaxosNodeRPCWrapper
 
-type Message = message.Message
+type Client struct {
+	localAddr string
+	heartbeatRate time.Duration
+	
+	listener net.Listener
+	serverRPCClient *rpc.Client
 
-var locAddr string
-var serverConnector *rpc.Client
-var paxnode paxosnodeinterface.PaxosNode
+	paxosNode *paxosnodeinterface.PaxosNode
+	paxosNodeRPCWrapper *PaxosNodeRPCWrapper
+	neighbors []string
+}
 
-/*
-func main() {
-	fmt.Println("start")
-	args := os.Args[1:]
-
-	servAddr := args[0]
-	localIP := "127.0.0.1:0"
-
-	serverAddr, _ := net.ResolveTCPAddr("tcp", servAddr)
-	tcpAddr, _ := net.ResolveTCPAddr("tcp", localIP)
-	listener, _ := net.ListenTCP("tcp", tcpAddr)
-	locAddr = listener.Addr().String()
-	fmt.Println("Local addr ", locAddr)
-
-	serverConnector, _ = rpc.Dial("tcp", serverAddr.String())
-	neighbours := make([]string, 0)
-	_ = serverConnector.Call("Nserver.Register", locAddr, &neighbours)
-	fmt.Println("Neighbours ", neighbours)
-
-	go doEvery(1*time.Millisecond, SendHeartbeat)
-
-	// initializing a new PN
-	paxnode, err := paxosnodeinterface.MountPaxosNode(locAddr)
-	if paxnode.Neighbours == nil {
-		fmt.Println("Nil neighbours in client")
+// Creates a new Client, ready to connect
+// TODO: pass in logger
+func NewClient(localAddr string, heartbeatRate time.Duration) (client *Client, err error) {
+	client = &Client{
+		heartbeatRate: heartbeatRate,
 	}
+	// in order to get out local ip and pick a port, we must assign a listener
+	addr, err := net.ResolveTCPAddr("tcp", localAddr)
 	if err != nil {
-		fmt.Println("Couldn't create a PN")
-		return
+		return nil, fmt.Errorf("unable to resolve localaddr '%s': %s", localAddr, err)
+	}
+	client.listener, err = net.ListenTCP("tcp", addr)
+	if err != nil {
+		return nil, fmt.Errorf("unable to listen to localaddr '%s': %s", localAddr, err)
+	}
+	client.localAddr = client.listener.Addr().String()
+	fmt.Println("Local addr ", client.localAddr)
+
+	// create the paxosnode
+	client.paxosNode, err = paxosnodeinterface.NewPaxosNode(client.localAddr)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create a paxos node: %s", err)
 	}
 
-	pni := new(PaxosNodeInstance)
-	rpc.Register(pni)
-	go rpc.Accept(listener)
+	// add the rpc wrapper
+	client.paxosNodeRPCWrapper, err = paxosnode.NewPaxosNodeRPCWrapper(client.paxosNode)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create rpc wrapper: %s", err)
+	}
+	rpc.Register(client.paxosNodeRPCWrapper)
+	go rpc.Accept(client.listener)
 
-	// connect PN to the neighbours
-	if len(neighbours) != 0 {
-		fmt.Println("Connect to the neighbour")
+	return client, nil
+}
 
-		// TODO[Harryson]: Revist. Shouldn't this be paxnode.SendNeighbours?
-		// TODO: Otherwise we are not using the interface
-		err = paxnode.BecomeNeighbours(neighbours)
+func (c *Client) Connect(serverAddr string) (err error) {
+	c.serverRPCClient, err = rpc.Dial("tcp", serverAddr)
+	if err != nil {
+		return fmt.Errorf("unable to connect to server: %s", err)
+	}
+	err = c.serverRPCClient.Call("Server.Register", c.localAddr, &c.neighbors)
+	if err != nil {
+		return fmt.Errorf("unable to register with server: %s", err)
+	}
+	go c.SendHeartbeats()
 
+	if len(c.neighbors) > 0 {
+		err = c.paxosNode.SendNeighbours(c.neighbors)
 		if err != nil {
-			fmt.Println("Cannot connect to any neighboursbours, ping Server")
-			// ping server here whether we're alive
-			alive := false
-			err = serverConnector.Call("Nserver.CheckAlive", locAddr, &alive)
-			if err != nil {
-				fmt.Println("Client disconnected from the net")
-				return
-			}
-		} else {
-			// If we have neighbours, learn the state of the log from them
-			err = paxnode.LearnLatestValueFromNeighbours()
+			return fmt.Errorf("unable to connect to neighbors: %s", err)
 		}
 	}
-
-	// TODO: wait for the commands from the app
-	/////////////
-	// Testing the writing with the two clients
-
-	paxnode.WriteToPaxosNode("hello")
-
-	/////////////
-
-	fmt.Println("Sleeping now")
-	time.Sleep(15 * time.Second)
+	return nil
 }
-*/
 
-func doEvery(d time.Duration, f func(time.Time) error) error {
-	for x := range time.Tick(d) {
-		f(x)
+func (c *Client) Read() (value string, err error) {
+	err = c.paxosNode.LearnLatestValueFromNeighbours()
+	return "", nil
+}
+
+// TODO: Check for error
+func (c *Client) Write(value string) (err error) {
+	c.paxosNode.WriteToPaxosNode("hello")
+	return nil
+}
+
+func (c *Client) IsAlive() (alive bool, err error) {
+	// alive is default false
+	err = c.serverRPCClient.Call("Server.CheckAlive", c.localAddr, &alive)
+	return alive, err
+}
+
+// TODO: use error log and continue
+func (c *Client) SendHeartbeats() (err error) {
+	for _ = range time.Tick(c.heartbeatRate) {
+		// TODO: Check ignored
+		var ignored bool
+		err = c.serverRPCClient.Call("Server.HeartBeat", c.localAddr, &ignored)
+		if err != nil {
+			return fmt.Errorf("error while sending heartbeat: %s", err)
+		}
 	}
-	return nil
-}
-
-func SendHeartbeat(t time.Time) (err error) {
-	var ignored bool
-	err = serverConnector.Call("Nserver.HeartBeat", locAddr, &ignored)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// RPCs for paxosnodes start here
-func (paxnodei *PaxosNodeInstance) ProcessPrepareRequest(m Message, r *Message) (err error) {
-	*r = paxnode.Acceptor.ProcessPrepare(m)
-	return nil
-}
-
-// RPC call received from other node to process accept request
-// If the request accepted, it gets disseminated to all the Learners in the Paxos NW
-func (paxnodei *PaxosNodeInstance) ProcessAcceptRequest(m Message, r *Message) (err error) {
-	fmt.Println("[Client] RPC processing accept request")
-	*r = paxnode.Acceptor.ProcessAccept(m)
-	if m.Equals(r) {
-		fmt.Println("[Client] saying accepted")
-		go paxnode.SayAccepted(r)
-	}
-	return nil
-}
-
-func (paxnodei *PaxosNodeInstance) ProcessLearnRequest(m Message, r *Message) (err error) {
-	// TODO: after Larissa's implementation put something like:
-	// TODO: paxnode.Learner.Learn(m)
-	*r = paxnode.Acceptor.ProcessAccept(m)
-	return nil
-}
-
-// RPC call which is called by node that tries to connect
-func (paxnodei *PaxosNodeInstance) ConnectRemoteNeighbour(addr string, r *bool) (err error) {
-	fmt.Println("connecting my remote neighbour")
-	err = paxnode.AcceptNeighbourConnection(addr, r)
-	return err
-}
-
-// RPC call from other node's Acceptor about value it accepted
-func (paxnodei *PaxosNodeInstance) NotifyAboutAccepted(m *Message, r *bool) (err error) {
-	paxnode.CountForNumAlreadyAccepted(m)
-	return err
-}
-
-// RPC call from a new PN that joined the network and needs to read
-// the state of the log from every other PN's learner
-func (paxnodei *PaxosNodeInstance) ReadFromLearner(placeholder string, log *[]Message) (err error) {
-	*log, err = paxnode.GetLog()
-	// return no errors, for now
 	return nil
 }

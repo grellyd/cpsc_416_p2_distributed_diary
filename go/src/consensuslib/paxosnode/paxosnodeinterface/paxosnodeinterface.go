@@ -41,6 +41,7 @@ type PaxosNodeInterface interface {
 	UnmountPaxosNode() (err error)
 }
 
+// TODO: Rename BecomeNeigbhors to SendNeighbors
 func (pn *PaxosNode) SendNeighbours(ips []string) (err error) {
 	err = pn.BecomeNeighbours(ips)
 	return err
@@ -63,11 +64,11 @@ func (pn *PaxosNode) UnmountPaxosNode() (err error) {
 
 // A client will call this to mount to create a Paxos Node that
 // is linked to the client. The PN's Addr field is set as the pnAddr passed in
-func MountPaxosNode(pnAddr string) (pn PaxosNode, err error) {
+func NewPaxosNode(pnAddr string) (pn *PaxosNode, err error) {
 	proposer := proposer.NewProposer(pnAddr)
 	acceptor := acceptor.NewAcceptor()
 	learner := learner.NewLearner()
-	pn = PaxosNode{
+	pn = &PaxosNode{
 		Addr:     pnAddr,
 		Proposer: proposer,
 		Acceptor: acceptor,
