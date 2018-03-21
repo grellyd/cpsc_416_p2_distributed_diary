@@ -27,8 +27,46 @@ func main() {
 	checkError(err)
 	isAlive, err := client.IsAlive()
 	checkError(err)
+	value, err := client.Read()
 	fmt.Printf("Alive: %v\n", isAlive)
-	cli.InputLoop()
+	checkError(err)
+	fmt.Printf("Reading: '%s'\n", value)
+	err = client.Write("Hello")
+	checkError(err)
+	value, err = client.Read()
+	checkError(err)
+	fmt.Printf("Reading: '%s'\n", value)
+	serveCli(client)
+	
+}
+
+func serveCli(client *consensuslib.Client) {
+	for {
+		command := cli.Run()
+		switch command.Command {
+		case cli.ALIVE:
+			isAlive, err := client.IsAlive()
+			checkError(err)
+			fmt.Printf("Alive: %v\n", isAlive)
+		case cli.EXIT:
+			fmt.Println("Closing the Chamber of Secrets...")
+			fmt.Println("Goodbye!")
+			os.Exit(0)
+		case cli.READ:
+			value, err := client.Read()
+			checkError(err)
+			fmt.Printf("Reading: '%s'\n", value)
+		case cli.WRITE:
+			value := ""
+			for _, s := range(*command.Data) {
+				// TODO: removes spaces
+				value += s
+			}
+			err := client.Write(value)
+			checkError(err)
+		default:
+		}
+	}
 }
 
 // TODO: add arg regex validation

@@ -14,8 +14,11 @@ import (
 type Server struct {
 	rpcServer *rpc.Server
 	listener net.Listener
+	errLog *log.Logger
+	outLog *log.Logger
 }
 
+// TODO: @grellyd needs clarification on the two User structs and their purpose
 type User struct {
 	Address   string
 	Heartbeat int64
@@ -40,6 +43,9 @@ var (
 func NewServer(addr string) (server *Server, err error) {
 	server = &Server{
 		rpcServer: rpc.NewServer(),
+		// TODO: use these
+		errLog: log.New(os.Stderr, "[serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds),
+		outLog: log.New(os.Stderr, "[serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds),
 	}
 	server.rpcServer.Register(server)
 	listener, err := net.Listen("tcp", addr)

@@ -6,6 +6,7 @@ import (
 	"net/rpc"
 	"net"
 	"time"
+	"log"
 )
 
 type PaxosNodeRPCWrapper = paxosnode.PaxosNodeRPCWrapper
@@ -20,6 +21,9 @@ type Client struct {
 	paxosNode *paxosnode.PaxosNode
 	paxosNodeRPCWrapper *PaxosNodeRPCWrapper
 	neighbors []string
+	
+	errLog *log.Logger
+	outLog *log.Logger
 }
 
 // Creates a new Client, ready to connect
@@ -78,9 +82,21 @@ func (c *Client) Connect(serverAddr string) (err error) {
 	return nil
 }
 
+// TODO
 func (c *Client) Read() (value string, err error) {
 	err = c.paxosNode.LearnLatestValueFromNeighbours()
-	return "", nil
+	if err != nil {
+		return "", fmt.Errorf("unable to learn latest value while reading: %s", err)
+	}
+	log, err := c.paxosNode.GetLog()
+	if err != nil {
+		return "", fmt.Errorf("error while getting the log: %s", err)
+	}
+	fmt.Printf("log: '%v'\n", log)
+	for _, m := range(log) {
+		value += m.Value
+	}
+	return value, nil
 }
 
 // TODO: Check for error
