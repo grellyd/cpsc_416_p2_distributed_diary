@@ -24,7 +24,7 @@ func main() {
 	checkError(err)
 	isAlive, err := client.IsAlive()
 	checkError(err)
-	fmt.Printf("Alive: %v", isAlive)
+	fmt.Printf("Alive: %v\n", isAlive)
 	cli.InputLoop()
 }
 

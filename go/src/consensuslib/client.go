@@ -70,6 +70,7 @@ func (c *Client) Connect(serverAddr string) (err error) {
 	go c.SendHeartbeats()
 
 	if len(c.neighbors) > 0 {
+		fmt.Printf("Neighbors: %v\n", c.neighbors)
 		err = c.paxosNode.SendNeighbours(c.neighbors)
 		if err != nil {
 			return fmt.Errorf("unable to connect to neighbors: %s", err)
