@@ -1,16 +1,16 @@
 package tests
 
 import (
-	"time"
-	"testing"
 	"consensuslib"
+	"testing"
+	"time"
 )
 
 func TestSingleClientReadWrite(t *testing.T) {
 	serverAddr := "127.0.0.1:12345"
 	localAddr := "127.0.0.1:0"
 	var tests = []struct {
-		Data       string
+		Data string
 	}{
 		{
 			Data: "testing",

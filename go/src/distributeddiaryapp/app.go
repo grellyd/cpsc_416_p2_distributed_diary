@@ -26,7 +26,7 @@ func main() {
 	isAlive, err := client.IsAlive()
 	checkError(err)
 	fmt.Printf("Alive: %v\n", isAlive)
-	
+
 	value, err := client.Read()
 	checkError(err)
 	fmt.Printf("Reading: '%s'\n", value)
@@ -38,13 +38,12 @@ func main() {
 	checkError(err)
 	fmt.Printf("Reading: '%s'\n", value)
 
-
 	// END Test Code
 
 	serveCli(client)
 }
 
-func setup()  *consensuslib.Client {
+func setup() *consensuslib.Client {
 	serverAddr, localAddr, err := parseArgs(os.Args)
 	checkError(err)
 	client, err := consensuslib.NewClient(localAddr, 1*time.Millisecond)
@@ -53,7 +52,6 @@ func setup()  *consensuslib.Client {
 	checkError(err)
 	return client
 }
-
 
 func serveCli(client *consensuslib.Client) {
 	for {

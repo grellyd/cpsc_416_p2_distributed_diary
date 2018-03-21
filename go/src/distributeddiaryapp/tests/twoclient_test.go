@@ -1,17 +1,17 @@
 package tests
 
 import (
-	"time"
-	"testing"
 	"consensuslib"
+	"testing"
+	"time"
 )
 
 func TestTwoClientsReadWrite(t *testing.T) {
 	serverAddr := "127.0.0.1:12345"
 	localAddr := "127.0.0.1:0"
 	var tests = []struct {
-		DataC0       string
-		DataC1       string
+		DataC0 string
+		DataC1 string
 	}{
 		{
 			DataC0: "testing more",
@@ -58,7 +58,7 @@ func TestTwoClientsReadWrite(t *testing.T) {
 		if err != nil {
 			t.Errorf("Bad Exit: \"TestTwoClientsReadWrite(%v)\" produced err: %v", test, err)
 		}
-		
+
 		// Can C1 see C0's value?
 		if value != test.DataC0 {
 			t.Errorf("Bad Exit: Read Data '%s' for Client 1 does not match written data '%s'", value, test.DataC0)
@@ -69,19 +69,19 @@ func TestTwoClientsReadWrite(t *testing.T) {
 		if err != nil {
 			t.Errorf("Bad Exit: \"TestTwoClientsReadWrite(%v)\" produced err: %v", test, err)
 		}
-		
+
 		// C1 Reads
 		value, err = client1.Read()
 		if err != nil {
 			t.Errorf("Bad Exit: \"TestTwoClientsReadWrite(%v)\" produced err: %v", test, err)
 		}
-		
+
 		// Can C1 see the combined log?
-		combinedData := test.DataC0 + test.DataC1 
+		combinedData := test.DataC0 + test.DataC1
 		if value != combinedData {
 			t.Errorf("Bad Exit: Read Data '%s' for Client 1 does not match written data '%s'", value, combinedData)
 		}
-		
+
 		// C0 Reads
 		value, err = client0.Read()
 		if err != nil {
