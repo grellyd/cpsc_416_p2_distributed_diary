@@ -9,12 +9,15 @@ import (
 	"fmt"
 	"net/rpc"
 	"time"
+	"regexp"
 )
 
 // Type Aliases
 type ProposerRole = proposer.ProposerRole
 type AcceptorRole = acceptor.AcceptorRole
 type LearnerRole = learner.LearnerRole
+
+var portRegex = regexp.MustCompile(":([0-9])+")
 
 type PaxosNode struct {
 	Addr       string // IP:port, identifier
@@ -37,6 +40,8 @@ func NewPaxosNode(pnAddr string) (pn *PaxosNode, err error) {
 		Acceptor: acceptor,
 		Learner:  learner,
 	}
+	portNumber := portRegex.FindString(pn.Addr)
+	acceptor.RestoreFromBackup(portNumber[1:])
 	return pn, err
 }
 

@@ -85,6 +85,7 @@ func (acceptor *AcceptorRole) RestoreFromBackup(port string) {
 	f, err := os.Open(path)
 	if err != nil {
 		fmt.Println("[Acceptor] no such file exist, no messages were prepared ", err)
+		return
 	}
 	buf, err := ioutil.ReadAll(f)
 	err = json.Unmarshal(buf, &acceptor.LastPromised)
