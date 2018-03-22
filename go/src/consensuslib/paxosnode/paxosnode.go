@@ -83,6 +83,12 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	// TODO: check whether should retry must return an error if no connection or something
 	pn.ShouldRetry(numAccepted, value)
 
+	// Get the value of the highest-numbered proposal previously accepted among all acceptors, if any
+	previousProposedValue := pn.GetPreviousProposedValue()
+	if previousProposedValue != "" {
+		value = previousProposedValue
+	}
+
 	accReq := pn.Proposer.CreateAcceptRequest(value)
 	fmt.Printf("[paxosnode] Accept request is id: %d , val: %s, type: %d \n", accReq.ID, accReq.Value, accReq.Type)
 	numAccepted, err = pn.DisseminateRequest(accReq)
@@ -146,8 +152,7 @@ func (pn *PaxosNode) SetInitialLog() (err error) {
 		temp := make([]Message, 0)
 		e := v.Call("PaxosNodeRPCWrapper.ReadFromLearner", "placeholder", &temp)
 		if e != nil {
-			delete(pn.Neighbours, k)
-			pn.RemoveNbrAddr(k)
+			pn.RemoveFailedNeighbour(k)
 			continue
 		}
 		latestMsg := temp[len(temp)-1].Value
@@ -186,15 +191,6 @@ func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err e
 	return nil
 }
 
-func (pn *PaxosNode) RemoveNbrAddr(ip string) {
-	for i, v := range pn.NbrAddrs {
-		if v == ip {
-			pn.NbrAddrs = append(pn.NbrAddrs[:i], pn.NbrAddrs[i+1:]...)
-			break
-		}
-	}
-}
-
 // Disseminates a message to all neighbours. This includes prepare and accept requests.
 //TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
 func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err error) {
@@ -207,8 +203,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		for k, v := range pn.Neighbours {
 			e := v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
 			if e != nil {
-				delete(pn.Neighbours, k)
-				pn.RemoveNbrAddr(k)
+				pn.RemoveFailedNeighbour(k)
 			} else {
 				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
 				// for now just a stub which increases count anyway
@@ -227,8 +222,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		for k, v := range pn.Neighbours {
 			e := v.Call("PaxosNodeRPCWrapper.ProcessAcceptRequest", prepReq, &respReq)
 			if e != nil {
-				delete(pn.Neighbours, k)
-				pn.RemoveNbrAddr(k)
+				pn.RemoveFailedNeighbour(k)
 			} else {
 				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
 				// for now just a stub which increases count anyway
@@ -248,8 +242,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		for k, v := range pn.Neighbours {
 			e := v.Call("PaxosNodeRPCWrapper.ProcessLearnRequest", prepReq, &respReq)
 			if e != nil {
-				delete(pn.Neighbours, k)
-				pn.RemoveNbrAddr(k)
+				pn.RemoveFailedNeighbour(k)
 			} else {
 				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
 				// for now just a stub which increases count anyway
@@ -274,8 +267,7 @@ func (pn *PaxosNode) SayAccepted(m *Message) {
 	for k, v := range pn.Neighbours {
 		e := v.Call("PaxosNodeRPCWrapper.NotifyAboutAccepted", m, &counted)
 		if e != nil {
-			delete(pn.Neighbours, k)
-			pn.RemoveNbrAddr(k)
+			pn.RemoveFailedNeighbour(k)
 		}
 	}
 }
@@ -309,4 +301,50 @@ func (pn *PaxosNode) ShouldRetry(numAccepted int, value string) {
 		time.Sleep(message.SLEEPTIME)
 		pn.WriteToPaxosNode(value)
 	}
+}
+
+func (pn *PaxosNode) RemoveFailedNeighbour(ip string) {
+	delete(pn.Neighbours, ip)
+	pn.RemoveNbrAddr(ip)
+}
+
+func (pn *PaxosNode) RemoveNbrAddr(ip string) {
+	for i, v := range pn.NbrAddrs {
+		if v == ip {
+			pn.NbrAddrs = append(pn.NbrAddrs[:i], pn.NbrAddrs[i+1:]...)
+			break
+		}
+	}
+}
+
+func (pn *PaxosNode) GetPreviousProposedValue() string {
+	highestProposal := uint64(0)
+	priorProposedValue := ""
+	// First check PN's neighbours to find the value of the highest-numbered proposal that they have accepted
+	for k, v := range pn.Neighbours {
+		var proposal Message
+		e := v.Call("PaxosNodeRPCWrapper.GetLastPromisedProposal", "placeholder", &proposal)
+		if e != nil {
+			pn.RemoveFailedNeighbour(k)
+		}
+
+		// Check if proposal is not an empty message first (when neighbours have not accepted any proposals yet)
+		// to avoid accessing fields of an empty struct
+		if (Message{}) != proposal {
+			if proposal.ID > highestProposal {
+				highestProposal = proposal.ID
+				priorProposedValue = proposal.Value
+			}
+		}
+	}
+
+	// Then check PN itself if it has already accepted a prior proposal
+	selfLastPromisedProposal := pn.Acceptor.LastPromised
+	if (Message{}) != selfLastPromisedProposal {
+		if selfLastPromisedProposal.ID > highestProposal {
+			priorProposedValue = selfLastPromisedProposal.Value
+		}
+	}
+
+	return priorProposedValue
 }

@@ -63,3 +63,8 @@ func (p *PaxosNodeRPCWrapper) ReadFromLearner(placeholder string, log *[]Message
 	// return no errors, for now
 	return nil
 }
+
+func (p *PaxosNodeRPCWrapper) GetLastPromisedProposal(placeholder string, proposal *Message) (err error) {
+	*proposal = p.paxosNode.Acceptor.LastPromised
+	return nil
+}
