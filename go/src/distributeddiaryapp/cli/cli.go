@@ -21,7 +21,7 @@ type Command struct {
 	Data    *[]string
 }
 
-var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ])?|help|exit)")
+var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit)")
 
 var helpString = `
 ===========================================

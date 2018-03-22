@@ -69,11 +69,11 @@ func (pn *PaxosNode) UnmountPaxosNode() (err error) {
 // Handles the entire process of proposing a value and trying to achieve consensus
 //TODO[sharon]: update parameters as needed.
 func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
-	fmt.Println("[paxosnodeutil] Writing to paxos")
+	fmt.Println("[paxosnode] Writing to paxos ", value)
 	prepReq := pn.Proposer.CreatePrepareRequest()
-	fmt.Printf("[paxosnodeutil] Prepare request is id: %d , val: %s, type: %d \n", prepReq.ID, prepReq.Value, prepReq.Type)
+	fmt.Printf("[paxosnode] Prepare request is id: %d , val: %s, type: %d \n", prepReq.ID, prepReq.Value, prepReq.Type)
 	numAccepted, err := pn.DisseminateRequest(prepReq)
-	fmt.Println("[paxosnodeutil] Pledged to accept ", numAccepted)
+	fmt.Println("[paxosnode] Pledged to accept ", numAccepted)
 	// TODO: Unsure if err from DisseminateRequest should bubble up to client. Previous Note: should return new value?
 	if err != nil {
 		return false, err
@@ -84,12 +84,12 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	pn.ShouldRetry(numAccepted, value)
 
 	accReq := pn.Proposer.CreateAcceptRequest(value)
-	fmt.Printf("[paxosnodeutil] Accept request is id: %d , val: %s, type: %d \n", accReq.ID, accReq.Value, accReq.Type)
+	fmt.Printf("[paxosnode] Accept request is id: %d , val: %s, type: %d \n", accReq.ID, accReq.Value, accReq.Type)
 	numAccepted, err = pn.DisseminateRequest(accReq)
 	if err != nil {
 		return false, err
 	}
-	fmt.Println("[paxosnodeutil] Accepted ", numAccepted)
+	fmt.Println("[paxosnode] Accepted ", numAccepted)
 	// If majority is not reached, sleep for a while and try again
 	// TODO: check whether should retry must return an error if no connection or something
 	pn.ShouldRetry(numAccepted, value)
@@ -129,7 +129,7 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 		// Add ip to connectedNbrs and add the connection to Neighbours map
 		// after bidirectional RPC connection establishment is successful
 		if connected {
-			fmt.Println("[paxosnodeutil]: connected to the nbr")
+			fmt.Println("[paxosnode]: connected to the nbr")
 			pn.NbrAddrs = append(pn.NbrAddrs, ip)
 			if pn.Neighbours == nil {
 				pn.Neighbours = make(map[string]*rpc.Client, 0)
@@ -198,12 +198,12 @@ func (pn *PaxosNode) RemoveNbrAddr(ip string) {
 // Disseminates a message to all neighbours. This includes prepare and accept requests.
 //TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
 func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err error) {
-	fmt.Println("[paxosnodeutil] Disseminate request")
+	fmt.Println("[paxosnode] Disseminate request")
 	numAccepted = 0
 	respReq := prepReq
 	switch prepReq.Type {
 	case message.PREPARE:
-		fmt.Println("[paxosnodeutil] PREPARE")
+		fmt.Println("[paxosnode] PREPARE")
 		for k, v := range pn.Neighbours {
 			e := v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
 			if e != nil {
@@ -223,7 +223,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			numAccepted++
 		}
 	case message.ACCEPT:
-		fmt.Println("[paxosnodeutil] ACCEPT")
+		fmt.Println("[paxosnode] ACCEPT")
 		for k, v := range pn.Neighbours {
 			e := v.Call("PaxosNodeRPCWrapper.ProcessAcceptRequest", prepReq, &respReq)
 			if e != nil {
@@ -241,7 +241,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		pn.Acceptor.ProcessAccept(prepReq)
 		if prepReq.Equals(&respReq) {
 			numAccepted++
-			fmt.Println("[paxosnodeutil] saying accepted for myself")
+			fmt.Println("[paxosnode] saying accepted for myself")
 			go pn.SayAccepted(&prepReq)
 		}
 	case message.CONSENSUS:
@@ -297,7 +297,7 @@ func (pn *PaxosNode) IsMajority(n int) bool {
 // and notifies learner when the # for this particular message is a majority to write into the log
 // TODO: think about moving this responsibility to the learner
 func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
-	fmt.Println("[paxosnodeutil] in CountForNumAlreadyAccepted")
+	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted")
 	numSeen := pn.Learner.NumAlreadyAccepted(m)
 	if pn.IsMajority(numSeen) {
 		pn.Learner.LearnValue(m) // this should write to the log TODO: expansion make learner return next round
