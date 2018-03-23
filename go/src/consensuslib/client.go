@@ -78,19 +78,16 @@ func (c *Client) Connect(serverAddr string) (err error) {
 		if err != nil {
 			return fmt.Errorf("unable to connect to neighbors: %s", err)
 		}
+		err = c.paxosNode.LearnLatestValueFromNeighbours()
+		if err != nil {
+			return fmt.Errorf("unable to learn latest value while reading: %s", err)
+		}
 	}
 	return nil
 }
 
 // TODO
 func (c *Client) Read() (value string, err error) {
-	// The below panics
-	/*
-	err = c.paxosNode.LearnLatestValueFromNeighbours()
-	if err != nil {
-		return "", fmt.Errorf("unable to learn latest value while reading: %s", err)
-	}
-	*/
 	log, err := c.paxosNode.GetLog()
 	if err != nil {
 		return "", fmt.Errorf("error while getting the log: %s", err)

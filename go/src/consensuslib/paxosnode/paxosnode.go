@@ -83,11 +83,12 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	// TODO: check whether should retry must return an error if no connection or something
 	pn.ShouldRetry(numAccepted, value)
 
+	// ***Unused For now***
 	// Get the value of the highest-numbered proposal previously accepted among all acceptors, if any
-	previousProposedValue := pn.GetPreviousProposedValue()
-	if previousProposedValue != "" {
-		value = previousProposedValue
-	}
+	//previousProposedValue := pn.GetPreviousProposedValue()
+	//if previousProposedValue != "" {
+	//	value = previousProposedValue
+	//}
 
 	accReq := pn.Proposer.CreateAcceptRequest(value)
 	fmt.Printf("[paxosnode] Accept request is id: %d , val: %s, type: %d \n", accReq.ID, accReq.Value, accReq.Type)
@@ -112,18 +113,6 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 // Sets up bidirectional RPC with all neighbours. Neighbours list is passed to the
 // Paxos Node by the client.
 func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
-	// Commented out since we already establish RPC listener at client.go
-	// Otherwise it will create different IP:Port combination unknown to the Server
-	/*pnAddr, err := net.ResolveTCPAddr("tcp", pn.Addr)
-	if err != nil {
-		fmt.Println("Error in resolving TCP address of PN")
-		log.Fatal(err)
-	}
-	conn, err := net.ListenTCP("tcp", pnAddr)
-
-	rpc.Register(pn)
-	go rpc.Accept(conn)*/
-
 	for _, ip := range ips {
 		neighbourConn, err := rpc.Dial("tcp", ip)
 		if err != nil {
@@ -158,17 +147,19 @@ func (pn *PaxosNode) SetInitialLog() (err error) {
 			pn.RemoveFailedNeighbour(k)
 			continue
 		}
-		// Get the last message on the given neighbour's log
-		latestMsg := temp[len(temp)-1].Value
-		if count, ok := logs[latestMsg]; ok {
-			count++
-			logs[latestMsg] = count
-			// Once a majority is reached, set the initial log state to be the majority log
-			if pn.IsMajority(count) {
-				pn.Learner.InitializeLog(temp)
+		// Check if learners even have any messages written
+		if (len(temp) > 0) {
+			latestMsg := temp[len(temp)-1].Value
+			if count, ok := logs[latestMsg]; ok {
+				count++
+				logs[latestMsg] = count
+				// Once a majority is reached, set the initial log state to be the majority log
+				if pn.IsMajority(count) {
+					pn.Learner.InitializeLog(temp)
+				}
+			} else {
+				logs[latestMsg] = 1
 			}
-		} else {
-			logs[latestMsg] = 1
 		}
 	}
 	return nil
@@ -320,7 +311,7 @@ func (pn *PaxosNode) RemoveNbrAddr(ip string) {
 		}
 	}
 }
-
+/* Unused for now
 func (pn *PaxosNode) GetPreviousProposedValue() string {
 	highestProposal := uint64(0)
 	priorProposedValue := ""
@@ -352,3 +343,4 @@ func (pn *PaxosNode) GetPreviousProposedValue() string {
 
 	return priorProposedValue
 }
+*/
