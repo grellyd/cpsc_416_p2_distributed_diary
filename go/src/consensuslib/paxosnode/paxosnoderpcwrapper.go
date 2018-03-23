@@ -37,8 +37,7 @@ func (p *PaxosNodeRPCWrapper) ProcessAcceptRequest(m Message, r *Message) (err e
 }
 
 func (p *PaxosNodeRPCWrapper) ProcessLearnRequest(m Message, r *Message) (err error) {
-	// TODO: after Larissa's implementation put something like:
-	// TODO: paxnode.Learner.Learn(m)
+	p.paxosNode.Learner.LearnValue(&m) // TODO: We don't consider round numbers or indices
 	*r = p.paxosNode.Acceptor.ProcessAccept(m)
 	return nil
 }
