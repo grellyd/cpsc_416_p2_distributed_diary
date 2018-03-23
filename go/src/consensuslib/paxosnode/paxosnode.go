@@ -147,14 +147,18 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 }
 
 func (pn *PaxosNode) SetInitialLog() (err error) {
+	// Map of logs to receive from neighbours
 	logs := make(map[string]int, 0)
 	for k, v := range pn.Neighbours {
+		// Create a temporary Log Message to get filled by neighbour learners
 		temp := make([]Message, 0)
+		// TODO: LEARNER
 		e := v.Call("PaxosNodeRPCWrapper.ReadFromLearner", "placeholder", &temp)
 		if e != nil {
 			pn.RemoveFailedNeighbour(k)
 			continue
 		}
+		// Get the last message on the given neighbour's log
 		latestMsg := temp[len(temp)-1].Value
 		if count, ok := logs[latestMsg]; ok {
 			count++

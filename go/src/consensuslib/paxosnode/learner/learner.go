@@ -17,11 +17,6 @@ type LearnerRole struct {
 	Log      []Message
 }
 
-// TODO: Is this struct necessary?
-//type Learner struct {
-//	Log []Message
-//}
-
 type LearnerInterface interface {
 	// This method is used to set the initial log state when a PN joins
 	// the network and learns of the majority log state from other PNs
@@ -38,6 +33,7 @@ func NewLearner() LearnerRole {
 }
 
 func (l *LearnerRole) InitializeLog(log []Message) (err error) {
+	// TODO: What if the learner already has a filled in log? Does this suggest an error state?
 	l.Log = log
 	return nil
 }
@@ -47,11 +43,17 @@ func (l *LearnerRole) GetCurrentLog() ([]Message, error) {
 }
 
 func (l *LearnerRole) NumAlreadyAccepted(m *Message) int {
-	fmt.Println("[Learner] in NumAlreadyAccepted")
-	return 2
+	if accepted, ok := l.Accepted[m.ID]; ok {
+		accepted.Times++
+	} else {
+		l.Accepted[m.ID] = &MessageAccepted { m, 1 }
+	}
+
+	return l.Accepted[m.ID].Times
 }
 
 func (l *LearnerRole) LearnValue(m *Message) {
-	// stub
+	// Initialize the log
+	// Add to the log
 	fmt.Println("Learning value ", m.Value)
 }
