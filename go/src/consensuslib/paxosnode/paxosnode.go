@@ -113,18 +113,6 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 // Sets up bidirectional RPC with all neighbours. Neighbours list is passed to the
 // Paxos Node by the client.
 func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
-	// Commented out since we already establish RPC listener at client.go
-	// Otherwise it will create different IP:Port combination unknown to the Server
-	/*pnAddr, err := net.ResolveTCPAddr("tcp", pn.Addr)
-	if err != nil {
-		fmt.Println("Error in resolving TCP address of PN")
-		log.Fatal(err)
-	}
-	conn, err := net.ListenTCP("tcp", pnAddr)
-
-	rpc.Register(pn)
-	go rpc.Accept(conn)*/
-
 	for _, ip := range ips {
 		neighbourConn, err := rpc.Dial("tcp", ip)
 		if err != nil {
