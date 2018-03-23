@@ -234,6 +234,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			go pn.SayAccepted(&prepReq)
 		}
 	case message.CONSENSUS:
+		fmt.Println("[paxosnode] CONSENSUS")
 		for k, v := range pn.Neighbours {
 			e := v.Call("PaxosNodeRPCWrapper.ProcessLearnRequest", prepReq, &respReq)
 			if e != nil {
@@ -246,6 +247,9 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 				}
 			}
 		}
+
+		// Also update our own learner
+		pn.Learner.LearnValue(&prepReq)
 	default:
 		return -1, errors.InvalidMessageTypeError(prepReq)
 	}

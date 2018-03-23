@@ -101,8 +101,8 @@ func (c *Client) Read() (value string, err error) {
 
 // TODO: Check for error
 func (c *Client) Write(value string) (err error) {
-	c.paxosNode.WriteToPaxosNode(value)
-	return nil
+	_, err = c.paxosNode.WriteToPaxosNode(value)
+	return err
 }
 
 func (c *Client) IsAlive() (alive bool, err error) {

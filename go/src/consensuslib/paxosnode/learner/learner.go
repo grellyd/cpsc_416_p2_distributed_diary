@@ -36,7 +36,7 @@ func NewLearner() LearnerRole {
 
 func (l *LearnerRole) InitializeLog(log []Message) (err error) {
 	// TODO: What if the learner already has a filled in log? Does this suggest an error state?
-	fmt.Println("[learner] Initializing log")
+	fmt.Println("[learner] Initializing log with size ", len(log))
 	l.Log = log
 	l.CurrentRound = len(log)
 
@@ -77,13 +77,13 @@ func (l *LearnerRole) LearnValue(m *Message) (newCurrentRoundIndex int, err erro
 		TODO: Do we want to auto-decrement in the learner, or should this be done elsewhere?
 	 */
 	fmt.Println("[learner] Writing value'", m.Value, "'to round ", l.CurrentRound)
-	if len(l.Log) >= l.CurrentRound {
+	if len(l.Log) > l.CurrentRound {
 		// Since Learner manages this state, this should theoretically never happen...
         return l.CurrentRound, errors.ValueForRoundInLogExistsError(l.CurrentRound)
 	} else {
 		l.Log = append(l.Log, *m)
 		fmt.Println("[learner] Wrote value ", l.Log[l.CurrentRound], " to log at index ", l.CurrentRound)
-		l.CurrentRound++
+		//l.CurrentRound++ // TODO: Once we have the concept of rounds
 		return l.CurrentRound, nil
 	}
 }
