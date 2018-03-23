@@ -28,3 +28,15 @@ type UnknownKeyError string
 func (e UnknownKeyError) Error() string {
 	return fmt.Sprintf("consensuslib server: unknown key [%s]", string(e))
 }
+
+type InvalidLogIndexError string
+
+func (e InvalidLogIndexError) Error() string {
+	return fmt.Sprintf("Unable to access the given index in the log.")
+}
+
+type ValueForRoundInLogExistsError string
+
+func (e ValueForRoundInLogExistsError) Error() string {
+	return fmt.Sprintf("Trying to write a value to an index in the Learner Log that has already been filled")
+}

@@ -287,7 +287,8 @@ func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
 	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted")
 	numSeen := pn.Learner.NumAlreadyAccepted(m)
 	if pn.IsMajority(numSeen) {
-		pn.Learner.LearnValue(m) // this should write to the log TODO: expansion make learner return next round
+		// TODO: Learner.LearnValue returns the next round #; use the new round # somewhere?
+		pn.Learner.LearnValue(m)
 	}
 }
 
