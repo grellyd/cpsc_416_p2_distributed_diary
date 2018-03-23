@@ -156,16 +156,19 @@ func (pn *PaxosNode) SetInitialLog() (err error) {
 			pn.RemoveFailedNeighbour(k)
 			continue
 		}
-		latestMsg := temp[len(temp)-1].Value
-		if count, ok := logs[latestMsg]; ok {
-			count++
-			logs[latestMsg] = count
-			// Once a majority is reached, set the initial log state to be the majority log
-			if pn.IsMajority(count) {
-				pn.Learner.InitializeLog(temp)
+		// Check if learners even have any messages written
+		if (len(temp) > 0) {
+			latestMsg := temp[len(temp)-1].Value
+			if count, ok := logs[latestMsg]; ok {
+				count++
+				logs[latestMsg] = count
+				// Once a majority is reached, set the initial log state to be the majority log
+				if pn.IsMajority(count) {
+					pn.Learner.InitializeLog(temp)
+				}
+			} else {
+				logs[latestMsg] = 1
 			}
-		} else {
-			logs[latestMsg] = 1
 		}
 	}
 	return nil
