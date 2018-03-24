@@ -135,33 +135,25 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 	return nil
 }
 
+// When a new node joins the network, it contacts all of its neighbours for their logs.
+// The new node will then set its initial log to be the longest log received from neighbours
 func (pn *PaxosNode) SetInitialLog() (err error) {
-	// Map of logs to receive from neighbours
-	logs := make(map[string]int, 0)
+	maxLen := 0
+	longestLog := make([]Message, 0)
 	for k, v := range pn.Neighbours {
-		// Create a temporary Log Message to get filled by neighbour learners
+		// Create a temporary log to get filled by neighbour learners
 		temp := make([]Message, 0)
-		// TODO: LEARNER
 		e := v.Call("PaxosNodeRPCWrapper.ReadFromLearner", "placeholder", &temp)
 		if e != nil {
 			pn.RemoveFailedNeighbour(k)
 			continue
 		}
-		// Check if learners even have any messages written
-		if (len(temp) > 0) {
-			latestMsg := temp[len(temp)-1].Value
-			if count, ok := logs[latestMsg]; ok {
-				count++
-				logs[latestMsg] = count
-				// Once a majority is reached, set the initial log state to be the majority log
-				if pn.IsMajority(count) {
-					pn.Learner.InitializeLog(temp)
-				}
-			} else {
-				logs[latestMsg] = 1
-			}
+		if (len(temp) > maxLen) {
+			maxLen = len(temp)
+			longestLog = temp
 		}
 	}
+	pn.Learner.InitializeLog(longestLog)
 	return nil
 }
 
