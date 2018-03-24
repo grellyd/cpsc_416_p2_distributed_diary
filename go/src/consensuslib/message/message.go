@@ -18,14 +18,16 @@ type Message struct {
 	Type           MsgType // msgType should only be 'prepare' or 'accept'. 'prepare' messages should have empty value field
 	Value          string  // value that needs to be written into log
 	FromProposerID string  // Proposer's ID to distinguish when same ID message arrived
+	RoundNum			 int		 // The number of the round the message is for
 }
 
-func NewMessage(id uint64, msgType MsgType, val string, pid string) Message {
+func NewMessage(id uint64, msgType MsgType, val string, pid string, roundNum int) Message {
 	m := Message{
 		id,
 		msgType,
 		val,
 		pid,
+		roundNum,
 	}
 	return m
 }

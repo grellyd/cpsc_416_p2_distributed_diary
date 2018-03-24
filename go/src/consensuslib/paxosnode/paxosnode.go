@@ -26,6 +26,7 @@ type PaxosNode struct {
 	Learner    LearnerRole
 	NbrAddrs   []string
 	Neighbours map[string]*rpc.Client
+	RoundNum	 int
 }
 
 // A client will call this to mount to create a Paxos Node that
@@ -70,7 +71,7 @@ func (pn *PaxosNode) UnmountPaxosNode() (err error) {
 //TODO[sharon]: update parameters as needed.
 func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	fmt.Println("[paxosnode] Writing to paxos ", value)
-	prepReq := pn.Proposer.CreatePrepareRequest()
+	prepReq := pn.Proposer.CreatePrepareRequest(pn.RoundNum)
 	fmt.Printf("[paxosnode] Prepare request is id: %d , val: %s, type: %d \n", prepReq.ID, prepReq.Value, prepReq.Type)
 	numAccepted, err := pn.DisseminateRequest(prepReq)
 	fmt.Println("[paxosnode] Pledged to accept ", numAccepted)
