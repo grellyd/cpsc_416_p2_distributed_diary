@@ -43,6 +43,8 @@ func NewPaxosNode(pnAddr string) (pn *PaxosNode, err error) {
 	}
 	portNumber := portRegex.FindString(pn.Addr)
 	acceptor.RestoreFromBackup(portNumber[1:])
+	fmt.Println("[paxosnode] after backup restoration promised value is ", acceptor.LastPromised)
+	fmt.Println("[paxosnode] after backup restoration accepted value is ", acceptor.LastAccepted)
 	return pn, err
 }
 

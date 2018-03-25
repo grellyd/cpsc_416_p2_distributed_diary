@@ -86,10 +86,11 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 // TODO: in the last version this method will have nothing, because we'll be running
 // code on different machines
 func (acceptor *AcceptorRole) RestoreFromBackup(port string) {
-	path := port + "prepare.json"
+	fmt.Println("[Acceptor] restoring from backup")
+	path := "temp1/"+port + "prepare.json"
 	f, err := os.Open(path)
 	if err != nil {
-		fmt.Println("[Acceptor] no such file exist, no messages were prepared ", err)
+		fmt.Println("[Acceptor] no such file exist, no messages were promised ", err)
 		return
 	}
 	buf, err := ioutil.ReadAll(f)
@@ -98,8 +99,12 @@ func (acceptor *AcceptorRole) RestoreFromBackup(port string) {
 		fmt.Println("[Acceptor] error on unmarshalling promise ", err)
 	}
 	f.Close()
-	path = port + "accept.json"
+	path = "temp1/"+port + "accept.json"
 	f, err = os.Open(path)
+	if err != nil {
+		fmt.Println("[Acceptor] no such file exist, no messages were accepted ", err)
+		return
+	}
 	buf, err = ioutil.ReadAll(f)
 	err = json.Unmarshal(buf, &acceptor.LastAccepted)
 	if err != nil {
