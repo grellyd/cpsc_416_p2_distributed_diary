@@ -123,15 +123,15 @@ func saveIntoFile(msg Message) (err error) {
 	var f *os.File
 	switch msg.Type {
 	case message.PREPARE:
-		path = strconv.Itoa(addr.Port) + "prepare.json"
+		path = "temp1/"+strconv.Itoa(addr.Port) + "prepare.json"
 	case message.ACCEPT:
-		path = strconv.Itoa(addr.Port) + "accept.json"
+		path = "temp1/"+strconv.Itoa(addr.Port) + "accept.json"
 	}
 	if err != nil {
 		fmt.Println("[Acceptor] errored on reading path ", err)
 	}
 	if _, erro := os.Stat(path); os.IsNotExist(erro) {
-
+		os.MkdirAll("temp1/", os.ModePerm);
 		f, err = os.Create(path)
 		if err != nil {
 			fmt.Println("[Acceptor] errored on creating file ", err)

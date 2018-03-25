@@ -274,7 +274,7 @@ func AcceptAcceptRequest() (err error) {
 }
 
 func (pn *PaxosNode) IsMajority(n int) bool {
-	if n > len(pn.Neighbours)/2 + 1 {
+	if n > (len(pn.Neighbours)+1)/2 {
 		return true
 	}
 	return false
@@ -286,6 +286,7 @@ func (pn *PaxosNode) IsMajority(n int) bool {
 func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
 	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, round # ", pn.RoundNum)
 	numSeen := pn.Learner.NumAlreadyAccepted(m)
+	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, how many accepted ", numSeen)
 	if pn.IsMajority(numSeen) {
 		// TODO: Learner.LearnValue returns the next round #; use the new round # somewhere?
 		pn.Learner.LearnValue(m)
