@@ -83,7 +83,7 @@ func (l *LearnerRole) LearnValue(m *Message) (newCurrentRoundIndex int, err erro
 	} else {
 		l.Log = append(l.Log, *m)
 		fmt.Println("[learner] Wrote value ", l.Log[l.CurrentRound], " to log at index ", l.CurrentRound)
-		//l.CurrentRound++ // TODO: Once we have the concept of rounds
+		l.CurrentRound++ // TODO: Once we have the concept of rounds
 		return l.CurrentRound, nil
 	}
 }

@@ -72,7 +72,7 @@ func (pn *PaxosNode) UnmountPaxosNode() (err error) {
 func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	fmt.Println("[paxosnode] Writing to paxos ", value)
 	prepReq := pn.Proposer.CreatePrepareRequest(pn.RoundNum)
-	fmt.Printf("[paxosnode] Prepare request is id: %d , val: %s, type: %d \n", prepReq.ID, prepReq.Value, prepReq.Type)
+	fmt.Printf("[paxosnode] Prepare request is id: %d , val: %s, type: %d, round: %d \n", prepReq.ID, prepReq.Value, prepReq.Type, prepReq.RoundNum)
 	numAccepted, err := pn.DisseminateRequest(prepReq)
 	fmt.Println("[paxosnode] Pledged to accept ", numAccepted)
 	// TODO: Unsure if err from DisseminateRequest should bubble up to client. Previous Note: should return new value?
@@ -91,7 +91,7 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	//	value = previousProposedValue
 	//}
 
-	accReq := pn.Proposer.CreateAcceptRequest(value)
+	accReq := pn.Proposer.CreateAcceptRequest(value, pn.RoundNum)
 	fmt.Printf("[paxosnode] Accept request is id: %d , val: %s, type: %d \n", accReq.ID, accReq.Value, accReq.Type)
 	numAccepted, err = pn.DisseminateRequest(accReq)
 	if err != nil {
@@ -102,11 +102,13 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	// TODO: check whether should retry must return an error if no connection or something
 	pn.ShouldRetry(numAccepted, value)
 
+	/* Shouldn't be there, commented out. But not sure how it will influence other code, so, don't delete yet
+	// same for all code marked *****
 	accReq.Type = message.CONSENSUS
 	_, err = pn.DisseminateRequest(accReq)
 	if err != nil {
 		return false, err
-	}
+	}*/
 
 	return success, nil
 }
@@ -182,7 +184,7 @@ func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err e
 // Disseminates a message to all neighbours. This includes prepare and accept requests.
 //TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
 func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err error) {
-	fmt.Println("[paxosnode] Disseminate request")
+	fmt.Println("[paxosnode] Disseminate request ", prepReq.Type)
 	numAccepted = 0
 	respReq := prepReq
 	switch prepReq.Type {
@@ -201,7 +203,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			}
 		}
 		// last send it to ourselves
-		pn.Acceptor.ProcessPrepare(prepReq)
+		pn.Acceptor.ProcessPrepare(prepReq, pn.RoundNum)
 		if prepReq.Equals(&respReq) {
 			numAccepted++
 		}
@@ -220,12 +222,13 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			}
 		}
 		// last send it to ourselves
-		pn.Acceptor.ProcessAccept(prepReq)
+		pn.Acceptor.ProcessAccept(prepReq, pn.RoundNum)
 		if prepReq.Equals(&respReq) {
 			numAccepted++
 			fmt.Println("[paxosnode] saying accepted for myself")
 			go pn.SayAccepted(&prepReq)
 		}
+	/* *****
 	case message.CONSENSUS:
 		fmt.Println("[paxosnode] CONSENSUS")
 		for k, v := range pn.Neighbours {
@@ -242,7 +245,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		}
 
 		// Also update our own learner
-		pn.Learner.LearnValue(&prepReq)
+		pn.Learner.LearnValue(&prepReq)*/
 	default:
 		return -1, errors.InvalidMessageTypeError(prepReq)
 	}
@@ -271,7 +274,7 @@ func AcceptAcceptRequest() (err error) {
 }
 
 func (pn *PaxosNode) IsMajority(n int) bool {
-	if n > len(pn.Neighbours)/2 {
+	if n > len(pn.Neighbours)/2 + 1 {
 		return true
 	}
 	return false
@@ -281,12 +284,14 @@ func (pn *PaxosNode) IsMajority(n int) bool {
 // and notifies learner when the # for this particular message is a majority to write into the log
 // TODO: think about moving this responsibility to the learner
 func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
-	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted")
+	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, round # ", pn.RoundNum)
 	numSeen := pn.Learner.NumAlreadyAccepted(m)
 	if pn.IsMajority(numSeen) {
 		// TODO: Learner.LearnValue returns the next round #; use the new round # somewhere?
 		pn.Learner.LearnValue(m)
+		pn.RoundNum++
 	}
+	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, value learned, round # ", pn.RoundNum)
 }
 
 func (pn *PaxosNode) ShouldRetry(numAccepted int, value string) {

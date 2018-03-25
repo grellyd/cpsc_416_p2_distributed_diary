@@ -36,17 +36,18 @@ func (proposer *ProposerRole) CreatePrepareRequest(roundNum int) Message {
 		Type:           message.PREPARE,
 		Value:          "",
 		FromProposerID: proposer.proposerID,
-		RoundNum:				roundNum,
+		RoundNum:		roundNum,
 	}
 	return prepareRequest
 }
 
-func (proposer *ProposerRole) CreateAcceptRequest(value string) Message {
+func (proposer *ProposerRole) CreateAcceptRequest(value string, roundNum int) Message {
 	acceptRequest := Message{
 		ID:             proposer.messageID,
 		Type:           message.ACCEPT,
 		Value:          value,
 		FromProposerID: proposer.proposerID,
+		RoundNum:		roundNum,
 	}
 	return acceptRequest
 }

@@ -39,13 +39,16 @@ type AcceptorInterface interface {
 	RestoreFromBackup(port string)
 }
 
-func (acceptor *AcceptorRole) ProcessPrepare(msg Message) Message {
-	fmt.Println("[Acceptor] process prepare")
+func (acceptor *AcceptorRole) ProcessPrepare(msg Message, roundNum int) Message {
+	fmt.Println("[Acceptor] process prepare for round ", roundNum)
 	// no any value had been proposed or n'>n
 	// then n' == n and ID' == ID (basically same proposer distributed proposal twice)
-	if &acceptor.LastPromised == nil || msg.ID > acceptor.LastPromised.ID {
+	if &acceptor.LastPromised == nil ||
+		(msg.ID > acceptor.LastPromised.ID && roundNum >= acceptor.LastPromised.RoundNum) {
 		acceptor.LastPromised = msg
-	} else if acceptor.LastPromised.ID == msg.ID && acceptor.LastPromised.FromProposerID == msg.FromProposerID {
+	} else if acceptor.LastPromised.ID == msg.ID &&
+		acceptor.LastPromised.FromProposerID == msg.FromProposerID &&
+			acceptor.LastPromised.RoundNum == roundNum {
 		acceptor.LastPromised = msg
 	}
 	fmt.Printf("[Acceptor] promised id: %d, val: %s \n", acceptor.LastPromised.ID, acceptor.LastPromised.Value)
@@ -53,7 +56,7 @@ func (acceptor *AcceptorRole) ProcessPrepare(msg Message) Message {
 	return acceptor.LastPromised
 }
 
-func (acceptor *AcceptorRole) ProcessAccept(msg Message) Message {
+func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 	fmt.Println("[Acceptor] process accept")
 	if &acceptor.LastAccepted == nil {
 		if msg.ID == acceptor.LastPromised.ID &&
@@ -65,9 +68,11 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message) Message {
 		}
 	} else {
 		if msg.ID == acceptor.LastPromised.ID &&
-			acceptor.LastPromised.FromProposerID == msg.FromProposerID {
+			acceptor.LastPromised.FromProposerID == msg.FromProposerID &&
+				acceptor.LastPromised.RoundNum == roundNum {
 			acceptor.LastAccepted = msg
-		} else if msg.ID > acceptor.LastPromised.ID || msg.ID > acceptor.LastAccepted.ID {
+		} else if (msg.ID > acceptor.LastPromised.ID && acceptor.LastPromised.RoundNum >= roundNum) ||
+			(msg.ID > acceptor.LastAccepted.ID && acceptor.LastAccepted.RoundNum >= roundNum) {
 			acceptor.LastAccepted = msg
 		}
 	}
