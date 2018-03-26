@@ -182,7 +182,6 @@ func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err e
 }
 
 // Disseminates a message to all neighbours. This includes prepare and accept requests.
-//TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
 func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err error) {
 	fmt.Println("[paxosnode] Disseminate request ", prepReq.Type)
 	numAccepted = 0
@@ -191,6 +190,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 	case message.PREPARE:
 		fmt.Println("[paxosnode] PREPARE")
 
+		// Set up timer and channel for responses
 		timer := time.NewTimer(time.Minute)
 		defer timer.Stop()
 		go func() {
@@ -203,15 +203,6 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			go func() {
 				var respReq Message
 				e = v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
-			/*	if e != nil {
-					pn.RemoveFailedNeighbour(k)
-				} else {
-					// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
-					// for now just a stub which increases count anyway
-					if prepReq.Equals(&respReq) {
-						numAccepted++
-					}
-				}*/
 				c<-respReq
 			}()
 		}
@@ -221,6 +212,8 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			numAccepted++
 		}
 
+		// While we don't have a majority, increment count as responses come, or have
+		// timer go off and return error.
 		for !pn.IsMajority(numAccepted) {
 			select {
 			case <- timer.C:
