@@ -192,23 +192,52 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 	switch prepReq.Type {
 	case message.PREPARE:
 		fmt.Println("[paxosnode] PREPARE")
-		for k, v := range pn.Neighbours {
-			e := v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
-			if e != nil {
-				pn.RemoveFailedNeighbour(k)
-			} else {
-				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
-				// for now just a stub which increases count anyway
-				if prepReq.Equals(&respReq) {
-					numAccepted++
-				}
-			}
+
+		timer := time.NewTimer(time.Minute)
+		defer timer.Stop()
+		go func() {
+			<- timer.C
+		}()
+		c := make(chan Message)
+	
+		for _, v := range pn.Neighbours {
+			var e error
+			go func() {
+				var respReq Message
+				e = v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
+			/*	if e != nil {
+					pn.RemoveFailedNeighbour(k)
+				} else {
+					// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
+					// for now just a stub which increases count anyway
+					if prepReq.Equals(&respReq) {
+						numAccepted++
+					}
+				}*/
+				c<-respReq
+			}()
 		}
 		// last send it to ourselves
 		pn.Acceptor.ProcessPrepare(prepReq, pn.RoundNum)
 		if prepReq.Equals(&respReq) {
 			numAccepted++
 		}
+
+		for !pn.IsMajority(numAccepted) {
+			select {
+			case <- timer.C:
+					return -1, errors.TimeoutError("Send prepare request")
+			case respReq := <- c:
+				if prepReq.Equals(&respReq) {
+					numAccepted++
+					if pn.IsMajority(numAccepted) {
+						return numAccepted, nil
+					}
+				}
+			}
+		}
+		return numAccepted, nil
+
 	case message.ACCEPT:
 		fmt.Println("[paxosnode] ACCEPT")
 		for k, v := range pn.Neighbours {
