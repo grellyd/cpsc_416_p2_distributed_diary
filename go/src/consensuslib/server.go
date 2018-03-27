@@ -44,8 +44,8 @@ func NewServer(addr string) (server *Server, err error) {
 	server = &Server{
 		rpcServer: rpc.NewServer(),
 		// TODO: use these
-		errLog: log.New(os.Stderr, "[serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds),
-		outLog: log.New(os.Stderr, "[serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds),
+		errLog: log.New(os.Stderr, "[ConsensusLib/serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds),
+		outLog: log.New(os.Stderr, "[ConsensusLib/serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds),
 	}
 	server.rpcServer.Register(server)
 	listener, err := net.Listen("tcp", addr)
@@ -54,7 +54,7 @@ func NewServer(addr string) (server *Server, err error) {
 		return nil, err
 	}
 	server.listener = listener
-	fmt.Println("Server started at ", addr)
+	fmt.Println("[ConsensusLib/serv] Server listening on ", addr)
 	return server, nil
 }
 
@@ -62,7 +62,7 @@ func (s *Server) Serve() error {
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
-			return fmt.Errorf("unable to accept connection: %s", err)
+			return fmt.Errorf("[ConsensusLib/serv] Unable to accept connection: %s", err)
 		}
 		go s.rpcServer.ServeConn(conn)
 	}
