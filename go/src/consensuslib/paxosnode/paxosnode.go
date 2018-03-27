@@ -141,7 +141,6 @@ func (pn *PaxosNode) SetInitialLog() (err error) {
 	for k, v := range pn.Neighbours {
 		// Create a temporary Log Message to get filled by neighbour learners
 		temp := make([]Message, 0)
-		// TODO: LEARNER
 		e := v.Call("PaxosNodeRPCWrapper.ReadFromLearner", "placeholder", &temp)
 		if e != nil {
 			pn.RemoveFailedNeighbour(k)
@@ -249,7 +248,10 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		}
 
 		// Also update our own learner
-		pn.Learner.LearnValue(&prepReq)
+		_, err := pn.Learner.LearnValue(&prepReq)
+		if (err != nil) {
+			// Do something
+		}
 	default:
 		return -1, errors.InvalidMessageTypeError(prepReq)
 	}

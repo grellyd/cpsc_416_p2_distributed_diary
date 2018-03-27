@@ -4,8 +4,10 @@
 // Or do `go install` then `distributeddiaryapp` to run the binary
 // The last is @grellyd preferred for ease, but requires you to add `go/bin` to your $PATH variable
 
-// Go Run Example: `go run distributeddiaryapp/app.go 127.0.0.1:12345 127.0.0.1:0`
-// Installed Run example: `distributeddiaryapp 127.0.0.1:12345 127.0.0.1:0`
+// USAGE: go run app.go [SERVER IP:PORT] [LOCAL PORT]
+// Go Run Example (Dev): `go run distributeddiaryapp/app.go 127.0.0.1:12345 8080` -- To run on 127.0.0.1:8080
+// Go Run Example (Prod): `go run distributeddiaryapp/app.go 127.0.0.1:12345 -1` -- To run on machine's outbound IP
+// Installed Run example: `distributeddiaryapp 127.0.0.1:12345 8080`
 
 package main
 
@@ -15,6 +17,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"strconv"
 )
 
 func main() {
@@ -46,9 +49,17 @@ func main() {
 }
 
 func setup() *consensuslib.Client {
-	serverAddr, localAddr, err := parseArgs(os.Args)
+	// Validate arguments
+	serverAddr, localPort, err := parseArgs(os.Args)
 	checkError(err)
-	client, err := consensuslib.NewClient(localAddr, 1*time.Millisecond)
+
+	intPort, err := strconv.Atoi(localPort)
+	if err != nil {
+		printCommandLineUsage()
+		os.Exit(1)
+	}
+
+	client, err := consensuslib.NewClient(intPort, 1*time.Millisecond)
 	checkError(err)
 	err = client.Connect(serverAddr)
 	checkError(err)
@@ -90,10 +101,10 @@ func serveCli(client *consensuslib.Client) {
 }
 
 // TODO: add arg regex validation
-func parseArgs(args []string) (serverAddr string, localAddr string, err error) {
+func parseArgs(args []string) (serverAddr string, localPort string, err error) {
 	serverAddr = args[1]
-	localAddr = args[2]
-	return serverAddr, localAddr, nil
+	localPort = args[2]
+	return serverAddr, localPort, nil
 }
 
 func checkError(err error) {
@@ -101,4 +112,8 @@ func checkError(err error) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func printCommandLineUsage() {
+	fmt.Println("USAGE: go run app.go [SERVER IP:PORT] [LOCAL PORT]")
 }

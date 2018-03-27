@@ -3,14 +3,16 @@ package util
 import (
 	"consensuslib"
 	"time"
+	"strconv"
 )
 
 const (
 	HEARTBEAT_INTERVAL = 1*time.Millisecond
 )
 
-func SetupClient(serverAddr string, localAddr string) (client *consensuslib.Client, err error) {
-	client, err = consensuslib.NewClient(localAddr, HEARTBEAT_INTERVAL)
+func SetupClient(serverAddr string, localPort string) (client *consensuslib.Client, err error) {
+	intPort, err := strconv.Atoi(localPort)
+	client, err = consensuslib.NewClient(intPort, HEARTBEAT_INTERVAL)
 	if err != nil {
 		return nil, err
 	}

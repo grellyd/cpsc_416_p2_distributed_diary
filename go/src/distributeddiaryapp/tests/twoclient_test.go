@@ -25,14 +25,14 @@ func TwoTests() []TestTwoData {
 
 func TestTwoReadOneWrite(t *testing.T) {
 	serverAddr := "127.0.0.1:12345"
-	localAddr := "127.0.0.1:0"
+	localPort := "0"
 	util.SetupServer(serverAddr)
 	for _, test := range TwoTests() {
-		client0, err := util.SetupClient(serverAddr, localAddr)
+		client0, err := util.SetupClient(serverAddr, localPort)
 		if err != nil {
 			t.Errorf("Bad Exit: \"TestTwoReadOneWrite(%v)\" produced err: %v", test, err)
 		}
-		client1, err := util.SetupClient(serverAddr, localAddr)
+		client1, err := util.SetupClient(serverAddr, localPort)
 		if err != nil {
 			t.Errorf("Bad Exit: \"TestTwoReadOneWrite(%v)\" produced err: %v", test, err)
 		}
@@ -68,14 +68,14 @@ func TestTwoReadOneWrite(t *testing.T) {
 
 func TestTwoReadTwoWrite(t *testing.T) {
 	serverAddr := "127.0.0.1:12345"
-	localAddr := "127.0.0.1:0"
+	localPort := "127.0.0.1:0"
 	util.SetupServer(serverAddr)
 	for _, test := range TwoTests() {
-		client0, err := util.SetupClient(serverAddr, localAddr)
+		client0, err := util.SetupClient(serverAddr, localPort)
 		if err != nil {
 			t.Errorf("Bad Exit: \"TestTwoReadTwoWrite(%v)\" produced err: %v", test, err)
 		}
-		client1, err := util.SetupClient(serverAddr, localAddr)
+		client1, err := util.SetupClient(serverAddr, localPort)
 		if err != nil {
 			t.Errorf("Bad Exit: \"TestTwoReadTwoWrite(%v)\" produced err: %v", test, err)
 		}
