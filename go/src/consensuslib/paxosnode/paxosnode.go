@@ -41,8 +41,9 @@ func NewPaxosNode(pnAddr string) (pn *PaxosNode, err error) {
 		Acceptor: acceptor,
 		Learner:  learner,
 	}
-	portNumber := portRegex.FindString(pn.Addr)
-	acceptor.RestoreFromBackup(portNumber[1:])
+	//portNumber := portRegex.FindString(pn.Addr)
+	//acceptor.RestoreFromBackup(portNumber[1:])
+	acceptor.RestoreFromBackup()
 	fmt.Println("[paxosnode] after backup restoration promised value is ", acceptor.LastPromised)
 	fmt.Println("[paxosnode] after backup restoration accepted value is ", acceptor.LastAccepted)
 	return pn, err
@@ -295,8 +296,10 @@ func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
 	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, how many accepted ", numSeen)
 	if pn.IsMajority(numSeen) {
 		// TODO: Learner.LearnValue returns the next round #; use the new round # somewhere?
-		pn.Learner.LearnValue(m)
-		pn.RoundNum++
+		if !pn.IsInLog(m) {
+			pn.Learner.LearnValue(m)
+			pn.RoundNum++
+		}
 	}
 	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, value learned, round # ", pn.RoundNum)
 }
@@ -320,6 +323,15 @@ func (pn *PaxosNode) RemoveNbrAddr(ip string) {
 			break
 		}
 	}
+}
+
+func (pn *PaxosNode) IsInLog(m *Message) bool {
+	for _,v := range pn.Learner.Log {
+		if v.ID == m.ID && v.FromProposerID == m.FromProposerID {
+			return true
+		}
+	}
+	return false
 }
 /* Unused for now
 func (pn *PaxosNode) GetPreviousProposedValue() string {
