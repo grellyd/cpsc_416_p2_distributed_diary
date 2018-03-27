@@ -4,21 +4,26 @@ import (
 	"consensuslib/message"
 	"encoding/json"
 	"fmt"
-	"net"
+	//"net"
 	"os"
-	"strconv"
+	//"strconv"
 	"io/ioutil"
+	"math/rand"
+	"time"
 )
 
 type Message = message.Message
 
 type AcceptorRole struct {
+	ID 			 string
 	LastPromised Message
 	LastAccepted Message
 }
 
 func NewAcceptor() AcceptorRole {
+	id := generateAcceptorID(6)
 	acc := AcceptorRole{
+		id,
 		Message{},
 		Message{},
 	}
@@ -39,21 +44,24 @@ type AcceptorInterface interface {
 	RestoreFromBackup(port string)
 }
 
-func (acceptor *AcceptorRole) ProcessPrepare(msg Message) Message {
-	fmt.Println("[Acceptor] process prepare")
+func (acceptor *AcceptorRole) ProcessPrepare(msg Message, roundNum int) Message {
+	fmt.Println("[Acceptor] process prepare for round ", roundNum)
 	// no any value had been proposed or n'>n
 	// then n' == n and ID' == ID (basically same proposer distributed proposal twice)
-	if &acceptor.LastPromised == nil || msg.ID > acceptor.LastPromised.ID {
+	if &acceptor.LastPromised == nil ||
+		(msg.ID > acceptor.LastPromised.ID && roundNum >= acceptor.LastPromised.RoundNum) {
 		acceptor.LastPromised = msg
-	} else if acceptor.LastPromised.ID == msg.ID && acceptor.LastPromised.FromProposerID == msg.FromProposerID {
+	} else if acceptor.LastPromised.ID == msg.ID &&
+		acceptor.LastPromised.FromProposerID == msg.FromProposerID &&
+			acceptor.LastPromised.RoundNum == roundNum {
 		acceptor.LastPromised = msg
 	}
 	fmt.Printf("[Acceptor] promised id: %d, val: %s \n", acceptor.LastPromised.ID, acceptor.LastPromised.Value)
-	saveIntoFile(acceptor.LastPromised)
+	acceptor.saveIntoFile(acceptor.LastPromised)
 	return acceptor.LastPromised
 }
 
-func (acceptor *AcceptorRole) ProcessAccept(msg Message) Message {
+func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 	fmt.Println("[Acceptor] process accept")
 	if &acceptor.LastAccepted == nil {
 		if msg.ID == acceptor.LastPromised.ID &&
@@ -65,14 +73,16 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message) Message {
 		}
 	} else {
 		if msg.ID == acceptor.LastPromised.ID &&
-			acceptor.LastPromised.FromProposerID == msg.FromProposerID {
+			acceptor.LastPromised.FromProposerID == msg.FromProposerID &&
+				acceptor.LastPromised.RoundNum == roundNum {
 			acceptor.LastAccepted = msg
-		} else if msg.ID > acceptor.LastPromised.ID || msg.ID > acceptor.LastAccepted.ID {
+		} else if (msg.ID > acceptor.LastPromised.ID && acceptor.LastPromised.RoundNum >= roundNum) ||
+			(msg.ID > acceptor.LastAccepted.ID && acceptor.LastAccepted.RoundNum >= roundNum) {
 			acceptor.LastAccepted = msg
 		}
 	}
 	fmt.Printf("[Acceptor] accepted id: %d, val: %s \n", acceptor.LastAccepted.ID, acceptor.LastAccepted.Value)
-	saveIntoFile(acceptor.LastAccepted)
+	acceptor.saveIntoFile(acceptor.LastAccepted)
 	return acceptor.LastAccepted
 
 }
@@ -80,11 +90,12 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message) Message {
 // TODO: since we're testing on the same machine use a port as a reference point
 // TODO: in the last version this method will have nothing, because we'll be running
 // code on different machines
-func (acceptor *AcceptorRole) RestoreFromBackup(port string) {
-	path := port + "prepare.json"
+func (acceptor *AcceptorRole) RestoreFromBackup() {
+	fmt.Println("[Acceptor] restoring from backup")
+	path := "temp1/"+acceptor.ID + "prepare.json"
 	f, err := os.Open(path)
 	if err != nil {
-		fmt.Println("[Acceptor] no such file exist, no messages were prepared ", err)
+		fmt.Println("[Acceptor] no such file exist, no messages were promised ", err)
 		return
 	}
 	buf, err := ioutil.ReadAll(f)
@@ -93,8 +104,12 @@ func (acceptor *AcceptorRole) RestoreFromBackup(port string) {
 		fmt.Println("[Acceptor] error on unmarshalling promise ", err)
 	}
 	f.Close()
-	path = port + "accept.json"
+	path = "temp1/"+acceptor.ID + "accept.json"
 	f, err = os.Open(path)
+	if err != nil {
+		fmt.Println("[Acceptor] no such file exist, no messages were accepted ", err)
+		return
+	}
 	buf, err = ioutil.ReadAll(f)
 	err = json.Unmarshal(buf, &acceptor.LastAccepted)
 	if err != nil {
@@ -103,11 +118,11 @@ func (acceptor *AcceptorRole) RestoreFromBackup(port string) {
 }
 
 // creates a log for acceptor in case of disconnection
-func saveIntoFile(msg Message) (err error) {
-	addr, errn := net.ResolveTCPAddr("tcp", msg.FromProposerID)
+func (a *AcceptorRole)saveIntoFile(msg Message) (err error) {
+	/*addr, errn := net.ResolveTCPAddr("tcp", msg.FromProposerID)
 	if errn != nil {
 		fmt.Println("[Acceptor] can't resolve own address")
-	}
+	}*/
 	fmt.Println("[Acceptor] saving message into file")
 	var path string
 	msgJson, err := json.Marshal(msg)
@@ -118,15 +133,15 @@ func saveIntoFile(msg Message) (err error) {
 	var f *os.File
 	switch msg.Type {
 	case message.PREPARE:
-		path = strconv.Itoa(addr.Port) + "prepare.json"
+		path = "temp1/"+ a.ID + "prepare.json"
 	case message.ACCEPT:
-		path = strconv.Itoa(addr.Port) + "accept.json"
+		path = "temp1/"+ a.ID + "accept.json"
 	}
 	if err != nil {
 		fmt.Println("[Acceptor] errored on reading path ", err)
 	}
 	if _, erro := os.Stat(path); os.IsNotExist(erro) {
-
+		os.MkdirAll("temp1/", os.ModePerm);
 		f, err = os.Create(path)
 		if err != nil {
 			fmt.Println("[Acceptor] errored on creating file ", err)
@@ -145,4 +160,17 @@ func saveIntoFile(msg Message) (err error) {
 	}
 	f.Close()
 	return err
+}
+
+func generateAcceptorID(n int) string {
+	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }

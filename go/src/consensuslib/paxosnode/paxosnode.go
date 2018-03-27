@@ -26,6 +26,7 @@ type PaxosNode struct {
 	Learner    LearnerRole
 	NbrAddrs   []string
 	Neighbours map[string]*rpc.Client
+	RoundNum	 int
 }
 
 // A client will call this to mount to create a Paxos Node that
@@ -40,8 +41,11 @@ func NewPaxosNode(pnAddr string) (pn *PaxosNode, err error) {
 		Acceptor: acceptor,
 		Learner:  learner,
 	}
-	portNumber := portRegex.FindString(pn.Addr)
-	acceptor.RestoreFromBackup(portNumber[1:])
+	//portNumber := portRegex.FindString(pn.Addr)
+	//acceptor.RestoreFromBackup(portNumber[1:])
+	acceptor.RestoreFromBackup()
+	fmt.Println("[paxosnode] after backup restoration promised value is ", acceptor.LastPromised)
+	fmt.Println("[paxosnode] after backup restoration accepted value is ", acceptor.LastAccepted)
 	return pn, err
 }
 
@@ -70,8 +74,8 @@ func (pn *PaxosNode) UnmountPaxosNode() (err error) {
 //TODO[sharon]: update parameters as needed.
 func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	fmt.Println("[paxosnode] Writing to paxos ", value)
-	prepReq := pn.Proposer.CreatePrepareRequest()
-	fmt.Printf("[paxosnode] Prepare request is id: %d , val: %s, type: %d \n", prepReq.ID, prepReq.Value, prepReq.Type)
+	prepReq := pn.Proposer.CreatePrepareRequest(pn.RoundNum)
+	fmt.Printf("[paxosnode] Prepare request is id: %d , val: %s, type: %d, round: %d \n", prepReq.ID, prepReq.Value, prepReq.Type, prepReq.RoundNum)
 	numAccepted, err := pn.DisseminateRequest(prepReq)
 	fmt.Println("[paxosnode] Pledged to accept ", numAccepted)
 	// TODO: Unsure if err from DisseminateRequest should bubble up to client. Previous Note: should return new value?
@@ -90,7 +94,7 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	//	value = previousProposedValue
 	//}
 
-	accReq := pn.Proposer.CreateAcceptRequest(value)
+	accReq := pn.Proposer.CreateAcceptRequest(value, pn.RoundNum)
 	fmt.Printf("[paxosnode] Accept request is id: %d , val: %s, type: %d \n", accReq.ID, accReq.Value, accReq.Type)
 	numAccepted, err = pn.DisseminateRequest(accReq)
 	if err != nil {
@@ -101,11 +105,13 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	// TODO: check whether should retry must return an error if no connection or something
 	pn.ShouldRetry(numAccepted, value)
 
+	/* Shouldn't be there, commented out. But not sure how it will influence other code, so, don't delete yet
+	// same for all code marked *****
 	accReq.Type = message.CONSENSUS
 	_, err = pn.DisseminateRequest(accReq)
 	if err != nil {
 		return false, err
-	}
+	}*/
 
 	return success, nil
 }
@@ -135,33 +141,30 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 	return nil
 }
 
+// When a new node joins the network, it contacts all of its neighbours for their logs.
+// The new node will then set its initial log to be the longest log received from neighbours
 func (pn *PaxosNode) SetInitialLog() (err error) {
-	// Map of logs to receive from neighbours
-	logs := make(map[string]int, 0)
+	maxLen := 0
+	longestLog := make([]Message, 0)
 	for k, v := range pn.Neighbours {
-		// Create a temporary Log Message to get filled by neighbour learners
+		// Create a temporary log to get filled by neighbour learners
 		temp := make([]Message, 0)
 		e := v.Call("PaxosNodeRPCWrapper.ReadFromLearner", "placeholder", &temp)
 		if e != nil {
 			pn.RemoveFailedNeighbour(k)
 			continue
 		}
-		// Check if learners even have any messages written
-		if (len(temp) > 0) {
-			latestMsg := temp[len(temp)-1].Value
-			if count, ok := logs[latestMsg]; ok {
-				count++
-				logs[latestMsg] = count
-				// Once a majority is reached, set the initial log state to be the majority log
-				if pn.IsMajority(count) {
-					pn.Learner.InitializeLog(temp)
-				}
-			} else {
-				logs[latestMsg] = 1
-			}
+		if (len(temp) > maxLen) {
+			maxLen = len(temp)
+			longestLog = temp
 		}
 	}
+	pn.Learner.InitializeLog(longestLog)
 	return nil
+}
+
+func (pn *PaxosNode) SetRoundNum(roundNum int) {
+	pn.RoundNum = roundNum
 }
 
 func (pn *PaxosNode) GetLog() (log []Message, err error) {
@@ -188,7 +191,7 @@ func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err e
 // Disseminates a message to all neighbours. This includes prepare and accept requests.
 //TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
 func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err error) {
-	fmt.Println("[paxosnode] Disseminate request")
+	fmt.Println("[paxosnode] Disseminate request ", prepReq.Type)
 	numAccepted = 0
 	respReq := prepReq
 	switch prepReq.Type {
@@ -207,7 +210,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			}
 		}
 		// last send it to ourselves
-		pn.Acceptor.ProcessPrepare(prepReq)
+		pn.Acceptor.ProcessPrepare(prepReq, pn.RoundNum)
 		if prepReq.Equals(&respReq) {
 			numAccepted++
 		}
@@ -226,12 +229,13 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			}
 		}
 		// last send it to ourselves
-		pn.Acceptor.ProcessAccept(prepReq)
+		pn.Acceptor.ProcessAccept(prepReq, pn.RoundNum)
 		if prepReq.Equals(&respReq) {
 			numAccepted++
 			fmt.Println("[paxosnode] saying accepted for myself")
 			go pn.SayAccepted(&prepReq)
 		}
+	/* *****
 	case message.CONSENSUS:
 		fmt.Println("[paxosnode] CONSENSUS")
 		for k, v := range pn.Neighbours {
@@ -248,10 +252,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		}
 
 		// Also update our own learner
-		_, err := pn.Learner.LearnValue(&prepReq)
-		if (err != nil) {
-			// Do something
-		}
+		pn.Learner.LearnValue(&prepReq)*/
 	default:
 		return -1, errors.InvalidMessageTypeError(prepReq)
 	}
@@ -280,7 +281,7 @@ func AcceptAcceptRequest() (err error) {
 }
 
 func (pn *PaxosNode) IsMajority(n int) bool {
-	if n > len(pn.Neighbours)/2 {
+	if n > (len(pn.Neighbours)+1)/2 {
 		return true
 	}
 	return false
@@ -290,12 +291,17 @@ func (pn *PaxosNode) IsMajority(n int) bool {
 // and notifies learner when the # for this particular message is a majority to write into the log
 // TODO: think about moving this responsibility to the learner
 func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
-	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted")
+	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, round # ", pn.RoundNum)
 	numSeen := pn.Learner.NumAlreadyAccepted(m)
+	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, how many accepted ", numSeen)
 	if pn.IsMajority(numSeen) {
 		// TODO: Learner.LearnValue returns the next round #; use the new round # somewhere?
-		pn.Learner.LearnValue(m)
+		if !pn.IsInLog(m) {
+			pn.Learner.LearnValue(m)
+			pn.RoundNum++
+		}
 	}
+	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, value learned, round # ", pn.RoundNum)
 }
 
 func (pn *PaxosNode) ShouldRetry(numAccepted int, value string) {
@@ -317,6 +323,15 @@ func (pn *PaxosNode) RemoveNbrAddr(ip string) {
 			break
 		}
 	}
+}
+
+func (pn *PaxosNode) IsInLog(m *Message) bool {
+	for _,v := range pn.Learner.Log {
+		if v.ID == m.ID && v.FromProposerID == m.FromProposerID {
+			return true
+		}
+	}
+	return false
 }
 /* Unused for now
 func (pn *PaxosNode) GetPreviousProposedValue() string {
