@@ -162,6 +162,10 @@ func (pn *PaxosNode) SetInitialLog() (err error) {
 	return nil
 }
 
+func (pn *PaxosNode) SetRoundNum(roundNum int) {
+	pn.RoundNum = roundNum
+}
+
 func (pn *PaxosNode) GetLog() (log []Message, err error) {
 	log, err = pn.Learner.GetCurrentLog()
 	return log, err
