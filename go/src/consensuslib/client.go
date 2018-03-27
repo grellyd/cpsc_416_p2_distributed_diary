@@ -34,7 +34,7 @@ func NewClient(localPort int, heartbeatRate time.Duration) (client *Client, err 
 	Creates a new client so that it is ready to connect to the server.
 
 	Set `localPort` to a valid port # if the server is running on the same machine (e.g. both are running on 127.0.0.1).
-	Otherwise, set it to -1 in production, and the client will use the public outbound IP to register with the server.
+	Otherwise, set it to < 0 in production, and the client will use the public outbound IP to register with the server.
 	****/
 	client = &Client{
 		heartbeatRate: heartbeatRate,

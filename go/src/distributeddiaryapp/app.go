@@ -4,9 +4,9 @@
 // Or do `go install` then `distributeddiaryapp` to run the binary
 // The last is @grellyd preferred for ease, but requires you to add `go/bin` to your $PATH variable
 
-// USAGE: go run app.go [SERVER IP:PORT] [LOCAL PORT]
+// USAGE: go run app.go SERVER IP:PORT [LOCAL PORT]
 // Go Run Example (Dev): `go run distributeddiaryapp/app.go 127.0.0.1:12345 8080` -- To run on 127.0.0.1:8080
-// Go Run Example (Prod): `go run distributeddiaryapp/app.go 127.0.0.1:12345 -1` -- To run on machine's outbound IP
+// Go Run Example (Prod): `go run distributeddiaryapp/app.go 127.0.0.1:12345` -- To run on machine's outbound IP
 // Installed Run example: `distributeddiaryapp 127.0.0.1:12345 8080`
 
 package main
@@ -49,17 +49,26 @@ func main() {
 }
 
 func setup() *consensuslib.Client {
+	serverAddr := ""
+	localPort := 0
 	// Validate arguments
-	serverAddr, localPort, err := parseArgs(os.Args)
-	checkError(err)
-
-	intPort, err := strconv.Atoi(localPort)
-	if err != nil {
-		printCommandLineUsage()
-		os.Exit(1)
+	if len(os.Args[1:]) == 1 {
+		// Local port not included; we're using a public IP so set to -1
+		serverAddr = os.Args[1]
+		localPort = -1
+	} else if len(os.Args[1:]) == 2 {
+		// Local port included; try to parse it
+		intPort, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			printCommandLineUsageAndExit()
+		}
+		serverAddr = os.Args[1]
+		localPort = intPort
+	} else {
+		printCommandLineUsageAndExit()
 	}
 
-	client, err := consensuslib.NewClient(intPort, 1*time.Millisecond)
+	client, err := consensuslib.NewClient(localPort, 1*time.Millisecond)
 	checkError(err)
 	err = client.Connect(serverAddr)
 	checkError(err)
@@ -73,15 +82,15 @@ func serveCli(client *consensuslib.Client) {
 		case cli.ALIVE:
 			isAlive, err := client.IsAlive()
 			checkError(err)
-			fmt.Printf("Alive: %v\n", isAlive)
+			fmt.Printf("[DD APP] Alive: %v\n", isAlive)
 		case cli.EXIT:
-			fmt.Println("Closing the Chamber of Secrets...")
-			fmt.Println("Goodbye!")
+			fmt.Println("[DD APP] Closing the Chamber of Secrets...")
+			fmt.Println("[DD APP] Goodbye!")
 			os.Exit(0)
 		case cli.READ:
 			value, err := client.Read()
 			checkError(err)
-			fmt.Printf("Reading: '%s'\n", value)
+			fmt.Printf("[DD APP] Reading: '%s'\n", value)
 		case cli.WRITE:
 			value := ""
 			for i, s := range *command.Data {
@@ -100,13 +109,6 @@ func serveCli(client *consensuslib.Client) {
 	}
 }
 
-// TODO: add arg regex validation
-func parseArgs(args []string) (serverAddr string, localPort string, err error) {
-	serverAddr = args[1]
-	localPort = args[2]
-	return serverAddr, localPort, nil
-}
-
 func checkError(err error) {
 	if err != nil {
 		fmt.Println(err)
@@ -114,6 +116,7 @@ func checkError(err error) {
 	}
 }
 
-func printCommandLineUsage() {
-	fmt.Println("USAGE: go run app.go [SERVER IP:PORT] [LOCAL PORT]")
+func printCommandLineUsageAndExit() {
+	fmt.Println("USAGE: go run app.go SERVERIP:PORT [LOCAL PORT]")
+	os.Exit(1)
 }
