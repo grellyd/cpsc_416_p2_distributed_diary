@@ -4,9 +4,9 @@
 // Or do `go install` then `distributeddiaryapp` to run the binary
 // The last is @grellyd preferred for ease, but requires you to add `go/bin` to your $PATH variable
 
-// USAGE: go run app.go SERVER IP:PORT [LOCAL PORT]
-// Go Run Example (Dev): `go run distributeddiaryapp/app.go 127.0.0.1:12345 8080` -- To run on 127.0.0.1:8080
-// Go Run Example (Prod): `go run distributeddiaryapp/app.go 127.0.0.1:12345` -- To run on machine's outbound IP
+// USAGE: go run app.go SERVERIP:PORT LOCALPORT [isLocal?]
+// Go Run Example (Dev): `go run distributeddiaryapp/app.go 127.0.0.1:12345 8080 LOCAL` -- To run on 127.0.0.1:8080
+// Go Run Example (Prod): `go run distributeddiaryapp/app.go 127.0.0.1:12345 8080` -- To run on machine's outbound IP on port 8080
 // Installed Run example: `distributeddiaryapp 127.0.0.1:12345 8080`
 
 package main
@@ -51,24 +51,31 @@ func main() {
 func setup() *consensuslib.Client {
 	serverAddr := ""
 	localPort := 0
+	isLocal := false
+
 	// Validate arguments
-	if len(os.Args[1:]) == 1 {
-		// Local port not included; we're using a public IP so set to -1
+	if len(os.Args[1:]) == 2 {
+		// Local arg not included; we're using a public IP
 		serverAddr = os.Args[1]
-		localPort = -1
-	} else if len(os.Args[1:]) == 2 {
-		// Local port included; try to parse it
 		intPort, err := strconv.Atoi(os.Args[2])
 		if err != nil {
 			printCommandLineUsageAndExit()
 		}
-		serverAddr = os.Args[1]
 		localPort = intPort
+	} else if len(os.Args[1:]) == 3 {
+		// Local arg included; we're running this on 127.0.0.1
+		serverAddr = os.Args[1]
+		intPort, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			printCommandLineUsageAndExit()
+		}
+		localPort = intPort
+		isLocal = true
 	} else {
 		printCommandLineUsageAndExit()
 	}
 
-	client, err := consensuslib.NewClient(localPort, 1*time.Millisecond)
+	client, err := consensuslib.NewClient(localPort, isLocal, 1*time.Millisecond)
 	checkError(err)
 	err = client.Connect(serverAddr)
 	checkError(err)
@@ -117,6 +124,6 @@ func checkError(err error) {
 }
 
 func printCommandLineUsageAndExit() {
-	fmt.Println("USAGE: go run app.go SERVERIP:PORT [LOCAL PORT]")
+	fmt.Println("USAGE: go run app.go SERVERIP:PORT LOCALPORT [isLocal?]")
 	os.Exit(1)
 }

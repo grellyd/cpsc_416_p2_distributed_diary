@@ -29,7 +29,7 @@ type Client struct {
 
 
 // TODO: pass in logger
-func NewClient(localPort int, heartbeatRate time.Duration) (client *Client, err error) {
+func NewClient(port int, isLocal bool, heartbeatRate time.Duration) (client *Client, err error) {
 	/****
 	Creates a new client so that it is ready to connect to the server.
 
@@ -41,8 +41,8 @@ func NewClient(localPort int, heartbeatRate time.Duration) (client *Client, err 
 	}
 
 	addr := &net.TCPAddr{}
-	if localPort >= 0 {
-		localAddr := fmt.Sprintf("127.0.0.1:%d", localPort)
+	if isLocal {
+		localAddr := fmt.Sprintf("127.0.0.1:%d", port)
 		addr, err = net.ResolveTCPAddr("tcp", localAddr)
 		if err != nil {
 			return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: Unable to resolve local address '%s': %s", localAddr, err)
@@ -52,7 +52,7 @@ func NewClient(localPort int, heartbeatRate time.Duration) (client *Client, err 
 		if err != nil {
 			return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: Outbound IP couldn't be fetched")
 		}
-		addr, err = net.ResolveTCPAddr("tcp", publicAddr)
+		addr, err = net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", publicAddr, port))
 		if err != nil {
 			return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: Unable to resolve a public address: %s", err)
 		}
