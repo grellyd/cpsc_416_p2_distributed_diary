@@ -87,6 +87,7 @@ func (c *Client) Connect(serverAddr string) (err error) {
 	if err != nil {
 		return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to connect to server: %s", err)
 	}
+	fmt.Printf("[LIB/CLIENT]#Connect: Registering to server at: %s\n", serverAddr)
 	err = c.serverRPCClient.Call("Server.Register", c.localAddr, &c.neighbors)
 	if err != nil {
 		return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to register with server: %s", err)

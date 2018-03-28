@@ -64,6 +64,8 @@ func (s *Server) Serve() error {
 		if err != nil {
 			return fmt.Errorf("[ConsensusLib/serv] Unable to accept connection: %s", err)
 		}
+
+		fmt.Printf("[ConsensusLib/serv] Serving %s\n", s.listener.Addr().String())
 		go s.rpcServer.ServeConn(conn)
 	}
 }
