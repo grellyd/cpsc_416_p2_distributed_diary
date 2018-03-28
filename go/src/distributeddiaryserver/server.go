@@ -29,11 +29,7 @@ func main() {
 		if err != nil {
 			printCommandLineUsageAndExit()
 		}
-
-		outboundAddr,err := networking.GetOutboundIP()
-		checkError(err)
-
-		addr = fmt.Sprintf("%s:%d", outboundAddr, intPort)
+		addr = fmt.Sprintf(":%d", intPort)
 	} else if len(os.Args[1:]) == 2 {
 		// LOCAL included; use private IP
 		intPort, err := strconv.Atoi(os.Args[1])
