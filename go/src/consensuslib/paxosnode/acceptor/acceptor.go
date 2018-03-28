@@ -4,21 +4,26 @@ import (
 	"consensuslib/message"
 	"encoding/json"
 	"fmt"
-	"net"
+	//"net"
 	"os"
-	"strconv"
+	//"strconv"
 	"io/ioutil"
+	"math/rand"
+	"time"
 )
 
 type Message = message.Message
 
 type AcceptorRole struct {
+	ID 			 string
 	LastPromised Message
 	LastAccepted Message
 }
 
 func NewAcceptor() AcceptorRole {
+	id := generateAcceptorID(6)
 	acc := AcceptorRole{
+		id,
 		Message{},
 		Message{},
 	}
@@ -52,7 +57,7 @@ func (acceptor *AcceptorRole) ProcessPrepare(msg Message, roundNum int) Message 
 		acceptor.LastPromised = msg
 	}
 	fmt.Printf("[Acceptor] promised id: %d, val: %s \n", acceptor.LastPromised.ID, acceptor.LastPromised.Value)
-	saveIntoFile(acceptor.LastPromised)
+	acceptor.saveIntoFile(acceptor.LastPromised)
 	return acceptor.LastPromised
 }
 
@@ -77,7 +82,7 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 		}
 	}
 	fmt.Printf("[Acceptor] accepted id: %d, val: %s \n", acceptor.LastAccepted.ID, acceptor.LastAccepted.Value)
-	saveIntoFile(acceptor.LastAccepted)
+	acceptor.saveIntoFile(acceptor.LastAccepted)
 	return acceptor.LastAccepted
 
 }
@@ -85,9 +90,9 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 // TODO: since we're testing on the same machine use a port as a reference point
 // TODO: in the last version this method will have nothing, because we'll be running
 // code on different machines
-func (acceptor *AcceptorRole) RestoreFromBackup(port string) {
+func (acceptor *AcceptorRole) RestoreFromBackup() {
 	fmt.Println("[Acceptor] restoring from backup")
-	path := "temp1/"+port + "prepare.json"
+	path := "temp1/"+acceptor.ID + "prepare.json"
 	f, err := os.Open(path)
 	if err != nil {
 		fmt.Println("[Acceptor] no such file exist, no messages were promised ", err)
@@ -99,7 +104,7 @@ func (acceptor *AcceptorRole) RestoreFromBackup(port string) {
 		fmt.Println("[Acceptor] error on unmarshalling promise ", err)
 	}
 	f.Close()
-	path = "temp1/"+port + "accept.json"
+	path = "temp1/"+acceptor.ID + "accept.json"
 	f, err = os.Open(path)
 	if err != nil {
 		fmt.Println("[Acceptor] no such file exist, no messages were accepted ", err)
@@ -113,11 +118,11 @@ func (acceptor *AcceptorRole) RestoreFromBackup(port string) {
 }
 
 // creates a log for acceptor in case of disconnection
-func saveIntoFile(msg Message) (err error) {
-	addr, errn := net.ResolveTCPAddr("tcp", msg.FromProposerID)
+func (a *AcceptorRole)saveIntoFile(msg Message) (err error) {
+	/*addr, errn := net.ResolveTCPAddr("tcp", msg.FromProposerID)
 	if errn != nil {
 		fmt.Println("[Acceptor] can't resolve own address")
-	}
+	}*/
 	fmt.Println("[Acceptor] saving message into file")
 	var path string
 	msgJson, err := json.Marshal(msg)
@@ -128,9 +133,9 @@ func saveIntoFile(msg Message) (err error) {
 	var f *os.File
 	switch msg.Type {
 	case message.PREPARE:
-		path = "temp1/"+strconv.Itoa(addr.Port) + "prepare.json"
+		path = "temp1/"+ a.ID + "prepare.json"
 	case message.ACCEPT:
-		path = "temp1/"+strconv.Itoa(addr.Port) + "accept.json"
+		path = "temp1/"+ a.ID + "accept.json"
 	}
 	if err != nil {
 		fmt.Println("[Acceptor] errored on reading path ", err)
@@ -155,4 +160,17 @@ func saveIntoFile(msg Message) (err error) {
 	}
 	f.Close()
 	return err
+}
+
+func generateAcceptorID(n int) string {
+	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }
