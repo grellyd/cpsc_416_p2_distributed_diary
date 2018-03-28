@@ -59,7 +59,7 @@ func NewFileLogger(loggerName string, state State) (logger *Logger, err error) {
 	}
 	logger = &Logger{
 		name:  loggerName,
-		log:   log.New(os.Stderr, fmt.Sprintf("[%s] ", loggerName), log.Lshortfile|log.LUTC|log.Lmicroseconds),
+		log:   log.New(os.Stderr, fmt.Sprintf("[%s] ", loggerName), log.Ltime|log.Lmicroseconds),
 		file:  f,
 		state: state,
 	}
@@ -100,6 +100,11 @@ func (l *Logger) Log(level Level, data string) {
 			l.log.Print(logString)
 		}
 	}
+}
+
+// Debug Level log
+func (l *Logger) Debug(data string) {
+	l.Log(DEBUG, data)
 }
 
 // Info Level log

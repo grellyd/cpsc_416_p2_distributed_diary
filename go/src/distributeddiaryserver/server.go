@@ -31,7 +31,7 @@ func main() {
 	var err error
 	logger, err = filelogger.NewFileLogger("server", filelogger.NORMAL)
 	checkError(err)
-	logger.Info("Logger created")
+	logger.Debug("Logger created")
 	addr := ""
 
 	// Validate arguments

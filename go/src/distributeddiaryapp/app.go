@@ -36,10 +36,10 @@ func main() {
 	checkError(err)
 	logger, err = filelogger.NewFileLogger("app", filelogger.NORMAL)
 	checkError(err)
-	logger.Info("starting application")
+	logger.Debug("starting application")
 	client, err := consensuslib.NewClient(localAddr, 1*time.Millisecond, logger)
 	checkError(err)
-	logger.Info("created client")
+	logger.Debug("created client")
 	err = client.Connect(serverAddr)
 	checkError(err)
 
@@ -65,7 +65,7 @@ func main() {
 
 	// END Test Code
 
-	logger.Info("serving")
+	logger.Debug("serving")
 	serveCli(client)
 }
 
@@ -135,7 +135,6 @@ func serveCli(client *consensuslib.Client) {
 				} else {
 					value += s
 				}
-
 			}
 			err := client.Write(value)
 			checkError(err)
