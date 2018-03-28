@@ -13,7 +13,6 @@ package main
 
 import (
 	"consensuslib"
-	"consensuslib/util/networking"
 	"fmt"
 	"os"
 	"strconv"
