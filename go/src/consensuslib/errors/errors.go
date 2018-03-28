@@ -44,5 +44,5 @@ func (e ValueForRoundInLogExistsError) Error() string {
 type TimeoutError string
 
 func (e TimeoutError) Error() string {
-	return fmt.Sprintf("The function called timed out.")
+	return fmt.Sprintf("The function [%s] called timed out.", string(e))
 }
