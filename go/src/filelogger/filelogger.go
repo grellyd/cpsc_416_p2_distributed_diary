@@ -47,6 +47,11 @@ type Logger struct {
 
 // NewFileLogger creates a new logger that may log to disk
 func NewFileLogger(loggerName string, state State) (logger *Logger, err error) {
+	// make logs folder if not existing already
+	err = os.MkdirAll("logs", 0700)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create log folder: %s", err)
+	}
 	// open file for writing
 	f, err := os.Create("logs/" + loggerName + timeNow() + ".log")
 	if err != nil {
