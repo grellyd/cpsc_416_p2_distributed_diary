@@ -11,8 +11,10 @@ import (
 	"time"
 )
 
+// PaxosNodeRPCWrapper is the rpc wrapper around the paxos node
 type PaxosNodeRPCWrapper = paxosnode.PaxosNodeRPCWrapper
 
+// Client in the consensuslib
 type Client struct {
 	localAddr     string
 	heartbeatRate time.Duration
@@ -90,6 +92,7 @@ func NewClient(localAddr string, heartbeatRate time.Duration, logger *filelogger
 	return client, nil
 }
 
+// Connect the client to the server
 func (c *Client) Connect(serverAddr string) (err error) {
 	c.serverRPCClient, err = rpc.Dial("tcp", serverAddr)
 	if err != nil {
@@ -125,7 +128,7 @@ func (c *Client) Connect(serverAddr string) (err error) {
 	return nil
 }
 
-// TODO
+// TODO: change to display nicely
 func (c *Client) Read() (value string, err error) {
 	log, err := c.paxosNode.GetLog()
 	if err != nil {
@@ -133,7 +136,7 @@ func (c *Client) Read() (value string, err error) {
 	}
 	fmt.Printf("[LIB/CLIENT]#Read: Log = '%v'\n", log)
 	for _, m := range log {
-		value += m.Value
+		value += m.Value + "\n"
 	}
 	return value, nil
 }
@@ -144,6 +147,7 @@ func (c *Client) Write(value string) (err error) {
 	return err
 }
 
+// IsAlive checks if the server is alive
 func (c *Client) IsAlive() (alive bool, err error) {
 	// alive is default false
 	err = c.serverRPCClient.Call("Server.CheckAlive", c.localAddr, &alive)
@@ -151,6 +155,8 @@ func (c *Client) IsAlive() (alive bool, err error) {
 }
 
 // TODO: use error log and continue
+
+// SendHeartbeats to the server
 func (c *Client) SendHeartbeats() (err error) {
 	for _ = range time.Tick(c.heartbeatRate) {
 		// TODO: Check ignored

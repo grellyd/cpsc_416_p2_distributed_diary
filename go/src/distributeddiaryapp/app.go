@@ -30,11 +30,12 @@ const (
 	localAddrDefault  = "127.0.0.1:0"
 )
 
+// TODO: Handle '--debug' flag to set logger into filelogger.DEBUGGING state
 func main() {
 	var err error
-	serverAddr, localAddr, err := parseArgs(os.Args)
-	checkError(err)
 	logger, err = filelogger.NewFileLogger("app", filelogger.NORMAL)
+	checkError(err)
+	serverAddr, localAddr, err := parseArgs(os.Args)
 	checkError(err)
 	logger.Debug("starting application")
 	client, err := consensuslib.NewClient(localAddr, 1*time.Millisecond, logger)
@@ -42,29 +43,6 @@ func main() {
 	logger.Debug("created client")
 	err = client.Connect(serverAddr)
 	checkError(err)
-
-	// BEGIN Test Code
-	// (change in here to run when every app is started)
-
-	/*
-		isAlive, err := client.IsAlive()
-		checkError(err)
-		fmt.Printf("Alive: %v\n", isAlive)
-
-		value, err := client.Read()
-		checkError(err)
-		fmt.Printf("Reading: '%s'\n", value)
-
-		err = client.Write("Hello")
-		checkError(err)
-
-		value, err = client.Read()
-		checkError(err)
-		fmt.Printf("Reading: '%s'\n", value)
-	*/
-
-	// END Test Code
-
 	logger.Debug("serving")
 	serveCli(client)
 }
@@ -125,7 +103,7 @@ func serveCli(client *consensuslib.Client) {
 		case cli.READ:
 			value, err := client.Read()
 			checkError(err)
-			logger.Info(fmt.Sprintf("Reading: '%s'", value))
+			logger.Info(fmt.Sprintf("Reading: \n%s", value))
 		case cli.WRITE:
 			value := ""
 			for i, s := range *command.Data {
