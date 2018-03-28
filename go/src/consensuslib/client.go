@@ -3,6 +3,7 @@ package consensuslib
 import (
 	"consensuslib/paxosnode"
 	"consensuslib/util/networking"
+	"filelogger"
 	"fmt"
 	"log"
 	"net"
@@ -15,6 +16,7 @@ type PaxosNodeRPCWrapper = paxosnode.PaxosNodeRPCWrapper
 type Client struct {
 	localAddr     string
 	heartbeatRate time.Duration
+	logger        *filelogger.Logger
 
 	listener        net.Listener
 	serverRPCClient *rpc.Client
@@ -27,6 +29,7 @@ type Client struct {
 	outLog *log.Logger
 }
 
+<<<<<<< HEAD
 
 // TODO: pass in logger
 func NewClient(port int, isLocal bool, heartbeatRate time.Duration) (client *Client, err error) {
@@ -36,8 +39,13 @@ func NewClient(port int, isLocal bool, heartbeatRate time.Duration) (client *Cli
 	Set `localPort` to a valid port # if the server is running on the same machine (e.g. both are running on 127.0.0.1).
 	Otherwise, set it to < 0 in production, and the client will use the public outbound IP to register with the server.
 	****/
+=======
+// NewClient creates a new Client, ready to connect
+func NewClient(localAddr string, heartbeatRate time.Duration, logger *filelogger.Logger) (client *Client, err error) {
+>>>>>>> 8d01746... Working basic logger
 	client = &Client{
 		heartbeatRate: heartbeatRate,
+		logger:        logger,
 	}
 
 	addr := &net.TCPAddr{}

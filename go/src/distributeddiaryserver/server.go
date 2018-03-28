@@ -12,13 +12,26 @@
 package main
 
 import (
-	"consensuslib"
 	"fmt"
+	"consensuslib"
+	"filelogger"
 	"os"
 	"strconv"
+	"regexp"
 )
 
+const (
+	serverAddrDefault = "127.0.0.1:12345"
+)
+
+var logger *filelogger.Logger
+var validAddr = regexp.MustCompile("[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,5}")
+
 func main() {
+	var err error
+	logger, err = filelogger.NewFileLogger("server", filelogger.NORMAL)
+	checkError(err)
+	logger.Info("Logger created")
 	addr := ""
 
 	// Validate arguments
@@ -40,16 +53,39 @@ func main() {
 		printCommandLineUsageAndExit()
 	}
 
+	// addr, err := parseArgs(os.Args)
+	// checkError(err)
+	
 	fmt.Printf("[DD SERVER] Calling consensuslib.NewServer with address %s\n", addr)
-	server, err := consensuslib.NewServer(addr)
+	server, err := consensuslib.NewServer(addr, logger)
 	checkError(err)
 	err = server.Serve()
 	checkError(err)
 }
 
+func parseArgs(args []string) (serverAddr string, err error) {
+	if len(args) > 1 {
+		serverAddr = args[1] 
+		if !validAddr.MatchString(serverAddr) {
+			logger.Error("argument is not a valid address")
+			logger.Warning("contining with default address of " + serverAddrDefault)
+			serverAddr = serverAddrDefault
+		}
+		return serverAddr, nil
+	}
+	logger.Error("argument is not a valid address")
+	logger.Warning("contining with default address of " + serverAddrDefault)
+	serverAddr = serverAddrDefault
+	return serverAddr, nil
+}
+
 func checkError(err error) {
 	if err != nil {
-		fmt.Println(err)
+		if logger != nil {
+			logger.Fatal(err.Error())
+		} else {
+			fmt.Println(err.Error())
+		}
 		os.Exit(1)
 	}
 }

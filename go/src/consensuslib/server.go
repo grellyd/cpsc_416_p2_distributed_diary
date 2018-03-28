@@ -2,62 +2,65 @@ package consensuslib
 
 import (
 	"consensuslib/errors"
+	"filelogger"
 	"fmt"
-	"log"
 	"net"
 	"net/rpc"
-	"os"
 	"sync"
 	"time"
 )
 
+// Server is our server
 type Server struct {
 	rpcServer *rpc.Server
 	listener  net.Listener
-	errLog    *log.Logger
-	outLog    *log.Logger
+	logger    *filelogger.Logger
 }
 
-// TODO: @grellyd needs clarification on the two User structs and their purpose
+// User represents a connected client
 type User struct {
 	Address   string
 	Heartbeat int64
 }
 
+// AllUsers is the collection of all our users
 type AllUsers struct {
 	sync.RWMutex
 	all map[string]*User
 }
 
+// HeartBeat is our heartbeat rate
 type HeartBeat uint32
 
 var (
-	heartBeat HeartBeat   = 2
-	errLog    *log.Logger = log.New(os.Stderr, "[serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds)
-	outLog    *log.Logger = log.New(os.Stderr, "[serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds)
-	allUsers  AllUsers    = AllUsers{all: make(map[string]*User)}
+	heartBeat HeartBeat = 2
+	allUsers            = AllUsers{all: make(map[string]*User)}
 )
 
-// Creates a new server ready to register paxosnodes
-// TODO: inject logger
-func NewServer(addr string) (server *Server, err error) {
+// NewServer creates a new server ready to register paxosnodes
+func NewServer(addr string, logger *filelogger.Logger) (server *Server, err error) {
 	server = &Server{
 		rpcServer: rpc.NewServer(),
+<<<<<<< HEAD
 		// TODO: use these
 		errLog: log.New(os.Stderr, "[ConsensusLib/serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds),
 		outLog: log.New(os.Stderr, "[ConsensusLib/serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds),
+=======
+		logger:    logger,
+>>>>>>> 8d01746... Working basic logger
 	}
 	server.rpcServer.Register(server)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		// TODO: enhance error
-		return nil, err
+		return nil, fmt.Errorf("unable to create a listener on the server addres: %s", err)
 	}
 	server.listener = listener
 	fmt.Println("[ConsensusLib/serv] Server listening on ", addr)
+	logger.Info("Server started at " + addr)
 	return server, nil
 }
 
+// Serve for clients
 func (s *Server) Serve() error {
 	for {
 		conn, err := s.listener.Accept()
@@ -70,7 +73,7 @@ func (s *Server) Serve() error {
 	}
 }
 
-// Registers a client with the server
+// Register a client with the server
 func (s *Server) Register(addr string, res *[]string) error {
 	allUsers.Lock()
 	defer allUsers.Unlock()
@@ -83,7 +86,7 @@ func (s *Server) Register(addr string, res *[]string) error {
 		time.Now().UnixNano(),
 	}
 
-	go monitor(addr, time.Duration(heartBeat)*time.Second)
+	go monitor(addr, time.Duration(heartBeat)*time.Second, s.logger)
 
 	neighbourAddresses := make([]string, 0)
 
@@ -95,13 +98,13 @@ func (s *Server) Register(addr string, res *[]string) error {
 	}
 	*res = neighbourAddresses
 
-	outLog.Printf("Got Register from %s\n", addr)
+	s.logger.Info(fmt.Sprintf("Got Register from %s", addr))
 
 	return nil
 
 }
 
-// from proj1 server.go implementation by Ivan Beschastnikh
+// HeartBeat from proj1 server.go implementation by Ivan Beschastnikh
 func (s *Server) HeartBeat(addr string, _ignored *bool) error {
 	allUsers.Lock()
 	defer allUsers.Unlock()
@@ -116,30 +119,24 @@ func (s *Server) HeartBeat(addr string, _ignored *bool) error {
 	return nil
 }
 
+// CheckAlive says if the server is alive
 func (s *Server) CheckAlive(addr string, alive *bool) error {
 	*alive = true
 	return nil
 }
 
-// from proj1 server.go implementation by Ivan Beschastnikh
-func monitor(k string, heartBeatInterval time.Duration) {
+// from proj1 server.go implementation by Ivan Beschastnikh, adapted by Graham Brown
+func monitor(k string, heartBeatInterval time.Duration, logger *filelogger.Logger) {
 	for {
 		allUsers.Lock()
 		if time.Now().UnixNano()-allUsers.all[k].Heartbeat > int64(heartBeatInterval) {
-			outLog.Printf("%s timed out\n", allUsers.all[k].Address)
+			logger.Info(fmt.Sprintf("%s timed out", allUsers.all[k].Address))
 			delete(allUsers.all, k)
 			allUsers.Unlock()
 			return
 		}
-		outLog.Printf("%s is alive\n", allUsers.all[k].Address)
+		logger.Info(fmt.Sprintf("%s is alive", allUsers.all[k].Address))
 		allUsers.Unlock()
 		time.Sleep(heartBeatInterval)
-	}
-}
-
-// TODO: Not fail fatal. Pass up to caller
-func checkError(e error, m string) {
-	if e != nil {
-		errLog.Fatalf("%s, err = %s\n", m, e.Error())
 	}
 }

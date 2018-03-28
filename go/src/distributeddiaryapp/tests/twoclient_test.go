@@ -1,8 +1,9 @@
 package tests
 
 import (
-	"testing"
 	"distributeddiaryapp/tests/util"
+	"testing"
+	"time"
 )
 
 type TestTwoData struct {
@@ -11,7 +12,7 @@ type TestTwoData struct {
 }
 
 func TwoTests() []TestTwoData {
-	return []TestTwoData {
+	return []TestTwoData{
 		{
 			DataC0: "beep",
 			DataC1: "boop bop",
@@ -63,6 +64,7 @@ func TestTwoReadOneWrite(t *testing.T) {
 		if value != test.DataC0 {
 			t.Errorf("Bad Exit: Read Data '%s' for Client 1 does not match written data '%s'", value, test.DataC0)
 		}
+		time.Sleep(5 * time.Millisecond)
 	}
 }
 
@@ -135,5 +137,6 @@ func TestTwoReadTwoWrite(t *testing.T) {
 		if value != combinedData {
 			t.Errorf("Bad Exit: Read Data '%s' for Client 0 does not match written data '%s'", value, combinedData)
 		}
+		time.Sleep(5 * time.Millisecond)
 	}
 }

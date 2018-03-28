@@ -14,37 +14,58 @@ package main
 import (
 	"consensuslib"
 	"distributeddiaryapp/cli"
+	"filelogger"
 	"fmt"
 	"os"
+	"regexp"
 	"time"
 	"strconv"
 )
 
+var logger *filelogger.Logger
+var validAddr = regexp.MustCompile("[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,5}")
+
+const (
+	serverAddrDefault = "127.0.0.1:12345"
+	localAddrDefault  = "127.0.0.1:0"
+)
+
 func main() {
-	client := setup()
+	var err error
+	serverAddr, localAddr, err := parseArgs(os.Args)
+	checkError(err)
+	logger, err = filelogger.NewFileLogger("app", filelogger.NORMAL)
+	checkError(err)
+	logger.Info("starting application")
+	client, err := consensuslib.NewClient(localAddr, 1*time.Millisecond, logger)
+	checkError(err)
+	logger.Info("created client")
+	err = client.Connect(serverAddr)
+	checkError(err)
 
 	// BEGIN Test Code
 	// (change in here to run when every app is started)
 
 	/*
-	isAlive, err := client.IsAlive()
-	checkError(err)
-	fmt.Printf("Alive: %v\n", isAlive)
+		isAlive, err := client.IsAlive()
+		checkError(err)
+		fmt.Printf("Alive: %v\n", isAlive)
 
-	value, err := client.Read()
-	checkError(err)
-	fmt.Printf("Reading: '%s'\n", value)
+		value, err := client.Read()
+		checkError(err)
+		fmt.Printf("Reading: '%s'\n", value)
 
-	err = client.Write("Hello")
-	checkError(err)
+		err = client.Write("Hello")
+		checkError(err)
 
-	value, err = client.Read()
-	checkError(err)
-	fmt.Printf("Reading: '%s'\n", value)
+		value, err = client.Read()
+		checkError(err)
+		fmt.Printf("Reading: '%s'\n", value)
 	*/
 
 	// END Test Code
 
+	logger.Info("serving")
 	serveCli(client)
 }
 
@@ -89,20 +110,27 @@ func serveCli(client *consensuslib.Client) {
 		case cli.ALIVE:
 			isAlive, err := client.IsAlive()
 			checkError(err)
-			fmt.Printf("[DD APP] Alive: %v\n", isAlive)
+// 			fmt.Printf("[DD APP] Alive: %v\n", isAlive)
+// 		case cli.EXIT:
+// 			fmt.Println("[DD APP] Closing the Chamber of Secrets...")
+// 			fmt.Println("[DD APP] Goodbye!")
+// 			os.Exit(0)
+// 		case cli.READ:
+// 			value, err := client.Read()
+// 			checkError(err)
+// 			fmt.Printf("[DD APP] Reading: '%s'\n", value)
+			logger.Info(fmt.Sprintf("Alive: %v", isAlive))
 		case cli.EXIT:
-			fmt.Println("[DD APP] Closing the Chamber of Secrets...")
-			fmt.Println("[DD APP] Goodbye!")
-			os.Exit(0)
+			Exit()
 		case cli.READ:
 			value, err := client.Read()
 			checkError(err)
-			fmt.Printf("[DD APP] Reading: '%s'\n", value)
+			logger.Info(fmt.Sprintf("Reading: '%s'", value))
 		case cli.WRITE:
 			value := ""
 			for i, s := range *command.Data {
 				// add spaces
-				if i != len(*command.Data) - 1 {
+				if i != len(*command.Data)-1 {
 					value += s + " "
 				} else {
 					value += s
@@ -116,9 +144,34 @@ func serveCli(client *consensuslib.Client) {
 	}
 }
 
+// Exit nicely from the program
+func Exit() {
+	// TODO: Delete temp folder
+	logger.Info("Closing the Chamber of Secrets...")
+	logger.Info("Goodbye!")
+	logger.Exit()
+	os.Exit(0)
+}
+
+func parseArgs(args []string) (serverAddr string, localAddr string, err error) {
+	serverAddr = args[1]
+	localAddr = args[2]
+	if !validAddr.MatchString(serverAddr) || !validAddr.MatchString(localAddr) {
+		logger.Error("arguments are not valid addresses")
+		logger.Warning("contining with default addresses")
+		serverAddr = serverAddrDefault
+		localAddr = localAddrDefault
+	}
+	return serverAddr, localAddr, nil
+}
+
 func checkError(err error) {
 	if err != nil {
-		fmt.Println(err)
+		if logger != nil {
+			logger.Fatal(err.Error())
+		} else {
+			fmt.Println(err.Error())
+		}
 		os.Exit(1)
 	}
 }

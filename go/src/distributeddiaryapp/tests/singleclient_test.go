@@ -3,6 +3,7 @@ package tests
 import (
 	"distributeddiaryapp/tests/util"
 	"testing"
+	"time"
 )
 
 func TestSingleClientReadWrite(t *testing.T) {
@@ -35,5 +36,6 @@ func TestSingleClientReadWrite(t *testing.T) {
 		if value != test.Data {
 			t.Errorf("Bad Exit: Read Data '%s' does not match written data '%s'", value, test.Data)
 		}
+		time.Sleep(5 * time.Millisecond)
 	}
 }

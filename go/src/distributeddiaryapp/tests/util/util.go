@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	HEARTBEAT_INTERVAL = 1*time.Millisecond
+	HEARTBEAT_INTERVAL = 1 * time.Millisecond
 )
 
 func SetupClient(serverAddr string, localPort string) (client *consensuslib.Client, err error) {

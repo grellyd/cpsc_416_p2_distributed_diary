@@ -1,8 +1,8 @@
 package tests
 
 import (
-	"testing"
 	"distributeddiaryapp/tests/util"
+	"testing"
 )
 
 type TestThreeData struct {
@@ -12,7 +12,7 @@ type TestThreeData struct {
 }
 
 func ThreeTests() []TestThreeData {
-	return []TestThreeData {	
+	return []TestThreeData{
 		{
 			DataC0: "beep",
 			DataC1: "boop bop",
@@ -117,7 +117,7 @@ func TestThreeReadTwoWrite(t *testing.T) {
 		if value != test.DataC0 {
 			t.Errorf("Bad Exit: Read Data '%s' for Client 0 does not match written data '%s'", value, test.DataC0)
 		}
-		
+
 		// C1 Reads
 		value, err = client1.Read()
 		if err != nil {
@@ -168,13 +168,13 @@ func TestThreeReadTwoWrite(t *testing.T) {
 		if value != combinedData {
 			t.Errorf("Bad Exit: Read Data '%s' for Client 0 does not match written data '%s'", value, combinedData)
 		}
-		
+
 		// C2 Reads
 		value, err = client2.Read()
 		if err != nil {
 			t.Errorf("Bad Exit: \"TestTwoReadTwoWrite(%v)\" produced err: %v", test, err)
 		}
-		
+
 		// Can C2 see the combined log?
 		if value != combinedData {
 			t.Errorf("Bad Exit: Read Data '%s' for Client 2 does not match written data '%s'", value, combinedData)
@@ -215,7 +215,7 @@ func TestThreeReadThreeWrite(t *testing.T) {
 		if value != test.DataC0 {
 			t.Errorf("Bad Exit: Read Data '%s' for Client 0 does not match written data '%s'", value, test.DataC0)
 		}
-		
+
 		// C1 Reads
 		value, err = client1.Read()
 		if err != nil {
@@ -266,18 +266,18 @@ func TestThreeReadThreeWrite(t *testing.T) {
 		if value != combinedData {
 			t.Errorf("Bad Exit: Read Data '%s' for Client 0 does not match written data '%s'", value, combinedData)
 		}
-		
+
 		// C2 Reads
 		value, err = client2.Read()
 		if err != nil {
 			t.Errorf("Bad Exit: \"TestTwoReadTwoWrite(%v)\" produced err: %v", test, err)
 		}
-		
+
 		// Can C2 see the combined log?
 		if value != combinedData {
 			t.Errorf("Bad Exit: Read Data '%s' for Client 2 does not match written data '%s'", value, combinedData)
 		}
-		
+
 		// C2 Writes
 		err = client2.Write(test.DataC2)
 		if err != nil {
@@ -307,13 +307,13 @@ func TestThreeReadThreeWrite(t *testing.T) {
 		if value != combinedData {
 			t.Errorf("Bad Exit: Read Data '%s' for Client 0 does not match written data '%s'", value, combinedData)
 		}
-		
+
 		// C2 Reads
 		value, err = client2.Read()
 		if err != nil {
 			t.Errorf("Bad Exit: \"TestTwoReadTwoWrite(%v)\" produced err: %v", test, err)
 		}
-		
+
 		// Can C2 see the combined log?
 		if value != combinedData {
 			t.Errorf("Bad Exit: Read Data '%s' for Client 2 does not match written data '%s'", value, combinedData)
