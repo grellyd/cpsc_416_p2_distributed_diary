@@ -205,6 +205,15 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			go func() {
 				var respReq Message
 				e = v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
+			/*	if e != nil {
+					pn.RemoveFailedNeighbour(k)
+				} else {
+					// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
+					// for now just a stub which increases count anyway
+					if prepReq.Equals(&respReq) {
+						numAccepted++
+					}
+				}*/
 				c<-respReq
 			}()
 		}
