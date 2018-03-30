@@ -26,6 +26,7 @@ type PaxosNode struct {
 	Learner    LearnerRole
 	NbrAddrs   []string
 	Neighbours map[string]*rpc.Client
+	FailedNeighbours []string
 	RoundNum	 int
 }
 
@@ -103,6 +104,9 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	// If majority is not reached, sleep for a while and try again
 	// TODO: check whether should retry must return an error if no connection or something
 	pn.ShouldRetry(numAccepted, value)
+
+	// Remove all the failed neighbours at the end of a round
+	pn.ClearFailedNeighbours()
 
 	/* Shouldn't be there, commented out. But not sure how it will influence other code, so, don't delete yet
 	// same for all code marked *****
@@ -216,13 +220,22 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		go func() {
 			for k, v := range pn.Neighbours {
 				fmt.Println("[paxosnode] disseminating to neighbour ", k)
-				var _ error
+				var e error
 				var respReq Message
 				fmt.Println("[paxosnode] disseminating to neighbour inside ", k, "and RPC ", v)
-				_ = v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
+				e = v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
+				if e != nil {
+					pn.FailedNeighbours = append(pn.FailedNeighbours, k)
+				}
 				c<-respReq
 			}
 		}()
+		// If a majority of the neighbours fail, then we move to the next round because
+		// we cannot reach a consensus this round anymore
+		if (pn.IsMajority(len(pn.FailedNeighbours))) {
+			pn.RoundNum++
+			return numAccepted, nil
+		}
 
 		// last send it to ourselves
 		pn.Acceptor.ProcessPrepare(prepReq, pn.RoundNum)
@@ -257,7 +270,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 				e := v.Call("PaxosNodeRPCWrapper.ProcessAcceptRequest", prepReq, &respReq)
 				c<-respReq
 				if e != nil {
-					pn.RemoveFailedNeighbour(k)
+					pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 				} else {
 					// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
 					// for now just a stub which increases count anyway
@@ -267,6 +280,10 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 				}
 			}
 		}()
+		if (pn.IsMajority(len(pn.FailedNeighbours))) {
+			pn.RoundNum++
+			return numAccepted, nil
+		}
 
 		for !pn.IsMajority(numAccepted) {
 			select {
@@ -308,7 +325,7 @@ func (pn *PaxosNode) SayAccepted(m *Message) {
 	for k, v := range pn.Neighbours {
 		e := v.Call("PaxosNodeRPCWrapper.NotifyAboutAccepted", m, &counted)
 		if e != nil {
-			pn.RemoveFailedNeighbour(k)
+			pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 		}
 	}
 }
@@ -339,9 +356,18 @@ func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
 
 func (pn *PaxosNode) ShouldRetry(numAccepted int, value string) {
 	if !pn.IsMajority(numAccepted) {
+		// Before retrying, we must clear the failed neighbours
+		pn.ClearFailedNeighbours()
 		time.Sleep(message.SLEEPTIME)
 		pn.WriteToPaxosNode(value)
 	}
+}
+
+func (pn *PaxosNode) ClearFailedNeighbours() {
+	for _, ip := range pn.FailedNeighbours {
+		pn.RemoveFailedNeighbour(ip)
+	}
+	pn.FailedNeighbours = nil
 }
 
 func (pn *PaxosNode) RemoveFailedNeighbour(ip string) {
