@@ -166,6 +166,14 @@ func (pn *PaxosNode) SetInitialLog() (err error) {
 		}
 	}
 	pn.Learner.InitializeLog(longestLog)
+
+	// setting new messageId to a newly joined node to accommodate the same PSN across PaxosNW
+	logLen := len(longestLog)
+	if logLen != 0 {
+		newMsgID := longestLog[len(longestLog)-1].ID
+		pn.Proposer.UpdateMessageID(newMsgID)
+	}
+
 	return nil
 }
 
