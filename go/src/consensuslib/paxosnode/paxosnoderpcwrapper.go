@@ -20,6 +20,8 @@ func NewPaxosNodeRPCWrapper(paxosNode *PaxosNode) (wrapper *PaxosNodeRPCWrapper,
 
 // RPCs for paxosnodes start here
 func (p *PaxosNodeRPCWrapper) ProcessPrepareRequest(m Message, r *Message) (err error) {
+	fmt.Println("[paxosnodewrapper] increasing message ID")
+	p.paxosNode.Proposer.IncrementMessageID()
 	*r = p.paxosNode.Acceptor.ProcessPrepare(m, p.paxosNode.RoundNum)
 	return nil
 }
@@ -45,8 +47,9 @@ func (p *PaxosNodeRPCWrapper) ProcessAcceptRequest(m Message, r *Message) (err e
 
 // RPC call which is called by node that tries to connect
 func (p *PaxosNodeRPCWrapper) ConnectRemoteNeighbour(addr string, r *bool) (err error) {
-	fmt.Println("connecting my remote neighbour")
+	//fmt.Println("[paxoswrapper] connecting my remote neighbour")
 	err = p.paxosNode.AcceptNeighbourConnection(addr, r)
+	//fmt.Println("[paxoswrapper] error on connection? ", *r)
 	return err
 }
 

@@ -126,7 +126,6 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 		}
 		connected := false
 		err = neighbourConn.Call("PaxosNodeRPCWrapper.ConnectRemoteNeighbour", pn.Addr, &connected)
-
 		// Add ip to connectedNbrs and add the connection to Neighbours map
 		// after bidirectional RPC connection establishment is successful
 		if connected {
@@ -136,6 +135,10 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 				pn.Neighbours = make(map[string]*rpc.Client, 0)
 			}
 			pn.Neighbours[ip] = neighbourConn
+		}
+		fmt.Println("[paxosnode] after I connected to PaxosNW length", len(pn.Neighbours), " and ngbours ")
+		for k, v := range pn.Neighbours {
+			fmt.Println(k, "and rpc ", v )
 		}
 	}
 	return nil
@@ -184,6 +187,12 @@ func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err e
 		pn.Neighbours = make(map[string]*rpc.Client, 0)
 	}
 	pn.Neighbours[addr] = neighbourConn
+
+	fmt.Println("[paxosnode] after neigh connection we have length", len(pn.Neighbours), " and ngbours ")
+	for k, _ := range pn.Neighbours {
+		fmt.Println(k)
+	}
+
 	*result = true
 	return nil
 }
@@ -205,14 +214,29 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		}()
 		c := make(chan Message)
 	
-		for _, v := range pn.Neighbours {
+		/*for k, v := range pn.Neighbours {
+			fmt.Println("[paxosnode] disseminating to neighbour ", k)
 			var e error
 			go func() {
 				var respReq Message
+				fmt.Println("[paxosnode] disseminating to neighbour inside ", k, "and RPC ", v)
 				e = v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
 				c<-respReq
 			}()
-		}
+		}*/
+
+		go func() {
+			for k, v := range pn.Neighbours {
+				fmt.Println("[paxosnode] disseminating to neighbour ", k)
+				var _ error
+				var respReq Message
+				fmt.Println("[paxosnode] disseminating to neighbour inside ", k, "and RPC ", v)
+				_ = v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
+				c<-respReq
+
+			}
+		}()
+
 		// last send it to ourselves
 		pn.Acceptor.ProcessPrepare(prepReq, pn.RoundNum)
 		if prepReq.Equals(&respReq) {
