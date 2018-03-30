@@ -71,7 +71,6 @@ func (pn *PaxosNode) UnmountPaxosNode() (err error) {
 }
 
 // Handles the entire process of proposing a value and trying to achieve consensus
-//TODO[sharon]: update parameters as needed.
 func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	fmt.Println("[paxosnode] Writing to paxos ", value)
 	prepReq := pn.Proposer.CreatePrepareRequest(pn.RoundNum)
@@ -213,17 +212,6 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			<- timer.C
 		}()
 		c := make(chan Message)
-	
-		/*for k, v := range pn.Neighbours {
-			fmt.Println("[paxosnode] disseminating to neighbour ", k)
-			var e error
-			go func() {
-				var respReq Message
-				fmt.Println("[paxosnode] disseminating to neighbour inside ", k, "and RPC ", v)
-				e = v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
-				c<-respReq
-			}()
-		}*/
 
 		go func() {
 			for k, v := range pn.Neighbours {
@@ -233,7 +221,6 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 				fmt.Println("[paxosnode] disseminating to neighbour inside ", k, "and RPC ", v)
 				_ = v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
 				c<-respReq
-
 			}
 		}()
 
@@ -281,22 +268,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			fmt.Println("[paxosnode] saying accepted for myself")
 			go pn.SayAccepted(&prepReq)
 		}
-	/* *****
-	case message.CONSENSUS:
-		fmt.Println("[paxosnode] CONSENSUS")
-		for k, v := range pn.Neighbours {
-			e := v.Call("PaxosNodeRPCWrapper.ProcessLearnRequest", prepReq, &respReq)
-			if e != nil {
-				pn.RemoveFailedNeighbour(k)
-			} else {
-				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
-				// for now just a stub which increases count anyway
-				if prepReq.Equals(&respReq) {
-					numAccepted++
-				}
-			}
-		}
-
+	/* 
 		// Also update our own learner
 		pn.Learner.LearnValue(&prepReq)*/
 	default:
@@ -318,12 +290,6 @@ func (pn *PaxosNode) SayAccepted(m *Message) {
 			pn.RemoveFailedNeighbour(k)
 		}
 	}
-}
-
-// Locally accepts the accept request sent by a PN in the system.
-// TODO[sharon]: Figure out parameters. Might be RPC
-func AcceptAcceptRequest() (err error) {
-	return err
 }
 
 func (pn *PaxosNode) IsMajority(n int) bool {
