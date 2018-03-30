@@ -249,18 +249,37 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 
 	case message.ACCEPT:
 		fmt.Println("[paxosnode] ACCEPT")
-		for k, v := range pn.Neighbours {
-			e := v.Call("PaxosNodeRPCWrapper.ProcessAcceptRequest", prepReq, &respReq)
-			if e != nil {
-				pn.RemoveFailedNeighbour(k)
-			} else {
-				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
-				// for now just a stub which increases count anyway
+
+		c := make(chan Message)
+		go func() {
+			for k, v := range pn.Neighbours {
+				fmt.Println("[paxosnode] disseminating to neighbour ", k)
+				e := v.Call("PaxosNodeRPCWrapper.ProcessAcceptRequest", prepReq, &respReq)
+				c<-respReq
+				if e != nil {
+					pn.RemoveFailedNeighbour(k)
+				} else {
+					// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
+					// for now just a stub which increases count anyway
+					if prepReq.Equals(&respReq) {
+						numAccepted++
+					}
+				}
+			}
+		}()
+
+		for !pn.IsMajority(numAccepted) {
+			select {
+			case respReq := <- c:
 				if prepReq.Equals(&respReq) {
 					numAccepted++
+					if pn.IsMajority(numAccepted) {
+						return numAccepted, nil
+					}
 				}
 			}
 		}
+
 		// last send it to ourselves
 		pn.Acceptor.ProcessAccept(prepReq, pn.RoundNum)
 		if prepReq.Equals(&respReq) {
@@ -268,6 +287,8 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			fmt.Println("[paxosnode] saying accepted for myself")
 			go pn.SayAccepted(&prepReq)
 		}
+
+		return numAccepted, nil
 	/* 
 		// Also update our own learner
 		pn.Learner.LearnValue(&prepReq)*/
