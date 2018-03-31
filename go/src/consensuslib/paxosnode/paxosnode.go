@@ -122,6 +122,7 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 	for _, ip := range ips {
 		neighbourConn, err := rpc.Dial("tcp", ip)
 		if err != nil {
+			fmt.Println("[paxosnode]: Error in BecomeNeighbours")
 			return errors.NeighbourConnectionError(ip)
 		}
 		connected := false
@@ -177,6 +178,7 @@ func (pn *PaxosNode) GetLog() (log []Message, err error) {
 func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err error) {
 	neighbourConn, err := rpc.Dial("tcp", addr)
 	if err != nil {
+		fmt.Println("[paxosnode] Error in AcceptNeighbourConnection")
 		return errors.NeighbourConnectionError(addr)
 	}
 	pn.NbrAddrs = append(pn.NbrAddrs, addr)
