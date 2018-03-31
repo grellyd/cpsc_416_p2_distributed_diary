@@ -101,7 +101,14 @@ func (c *Client) Connect(serverAddr string) (err error) {
 			return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to connect to neighbors: %s", err)
 		}
 		err = c.paxosNode.LearnLatestValueFromNeighbours()
-		c.paxosNode.SetRoundNum(len(c.paxosNode.Learner.Log))
+		log := c.paxosNode.Learner.Log
+		if len(log) != 0 {
+			rn := (log[len(log)-1].RoundNum) + 1
+			c.paxosNode.SetRoundNum(rn)
+		}
+		//c.paxosNode.SetRoundNum(len(c.paxosNode.Learner.Log))
+
+
 		if err != nil {
 			return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to learn latest value while reading: %s", err)
 		}

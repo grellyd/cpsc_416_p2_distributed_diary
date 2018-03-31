@@ -46,14 +46,14 @@ type AcceptorInterface interface {
 }
 
 func (acceptor *AcceptorRole) ProcessPrepare(msg Message, roundNum int) Message {
-	//fmt.Println("[Acceptor] process prepare for round ", roundNum)
+	fmt.Println("[Acceptor] process prepare for round ", roundNum)
 	// no any value had been proposed or n'>n
 	// then n' == n and ID' == ID (basically same proposer distributed proposal twice)
 	if &acceptor.LastPromised == nil ||
 		(msg.ID > acceptor.LastPromised.ID && roundNum >= acceptor.LastPromised.RoundNum) {
 		acceptor.LastPromised = msg
-	} else if acceptor.LastPromised.ID == msg.ID &&
-		acceptor.LastPromised.FromProposerID == msg.FromProposerID &&
+	} else if acceptor.LastPromised.ID > msg.ID &&
+		//acceptor.LastPromised.FromProposerID == msg.FromProposerID &&
 			acceptor.LastPromised.RoundNum == roundNum {
 		acceptor.LastPromised = msg
 	}
@@ -63,7 +63,7 @@ func (acceptor *AcceptorRole) ProcessPrepare(msg Message, roundNum int) Message 
 }
 
 func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
-	//fmt.Println("[Acceptor] process accept")
+	fmt.Println("[Acceptor] process accept")
 	if &acceptor.LastAccepted == nil {
 		if msg.ID == acceptor.LastPromised.ID &&
 			msg.FromProposerID == acceptor.LastPromised.FromProposerID {
@@ -135,8 +135,10 @@ func (a *AcceptorRole)saveIntoFile(msg Message) (err error) {
 	switch msg.Type {
 	case message.PREPARE:
 		path = "temp1/"+ a.ID + "prepare.json"
+		fmt.Println("[Acceptor] saved PREPARE to file")
 	case message.ACCEPT:
 		path = "temp1/"+ a.ID + "accept.json"
+		fmt.Println("[Acceptor] saved ACCEPT to file")
 	}
 	if err != nil {
 		fmt.Println("[Acceptor] errored on reading path ", err)
