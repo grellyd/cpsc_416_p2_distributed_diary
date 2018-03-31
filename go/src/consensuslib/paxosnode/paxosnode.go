@@ -26,6 +26,7 @@ type PaxosNode struct {
 	Learner    LearnerRole
 	NbrAddrs   []string
 	Neighbours map[string]*rpc.Client
+	FailedNeighbours []string
 	RoundNum	 int
 }
 
@@ -71,7 +72,6 @@ func (pn *PaxosNode) UnmountPaxosNode() (err error) {
 }
 
 // Handles the entire process of proposing a value and trying to achieve consensus
-//TODO[sharon]: update parameters as needed.
 func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	fmt.Println("[paxosnode] Writing to paxos ", value)
 	prepReq := pn.Proposer.CreatePrepareRequest(pn.RoundNum)
@@ -87,13 +87,6 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	// TODO: check whether should retry must return an error if no connection or something
 	pn.ShouldRetry(numAccepted, value)
 
-	// ***Unused For now***
-	// Get the value of the highest-numbered proposal previously accepted among all acceptors, if any
-	//previousProposedValue := pn.GetPreviousProposedValue()
-	//if previousProposedValue != "" {
-	//	value = previousProposedValue
-	//}
-
 	accReq := pn.Proposer.CreateAcceptRequest(value, pn.RoundNum)
 	fmt.Printf("[paxosnode] Accept request is id: %d , val: %s, type: %d \n", accReq.ID, accReq.Value, accReq.Type)
 	numAccepted, err = pn.DisseminateRequest(accReq)
@@ -104,6 +97,9 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	// If majority is not reached, sleep for a while and try again
 	// TODO: check whether should retry must return an error if no connection or something
 	pn.ShouldRetry(numAccepted, value)
+
+	// Remove all the failed neighbours at the end of a round
+	pn.ClearFailedNeighbours()
 
 	/* Shouldn't be there, commented out. But not sure how it will influence other code, so, don't delete yet
 	// same for all code marked *****
@@ -127,7 +123,6 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 		}
 		connected := false
 		err = neighbourConn.Call("PaxosNodeRPCWrapper.ConnectRemoteNeighbour", pn.Addr, &connected)
-
 		// Add ip to connectedNbrs and add the connection to Neighbours map
 		// after bidirectional RPC connection establishment is successful
 		if connected {
@@ -137,6 +132,10 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 				pn.Neighbours = make(map[string]*rpc.Client, 0)
 			}
 			pn.Neighbours[ip] = neighbourConn
+		}
+		fmt.Println("[paxosnode] after I connected to PaxosNW length", len(pn.Neighbours), " and ngbours ")
+		for k, v := range pn.Neighbours {
+			fmt.Println(k, "and rpc ", v )
 		}
 	}
 	return nil
@@ -161,6 +160,14 @@ func (pn *PaxosNode) SetInitialLog() (err error) {
 		}
 	}
 	pn.Learner.InitializeLog(longestLog)
+
+	// setting new messageId to a newly joined node to accommodate the same PSN across PaxosNW
+	logLen := len(longestLog)
+	if logLen != 0 {
+		newMsgID := longestLog[len(longestLog)-1].ID
+		pn.Proposer.UpdateMessageID(newMsgID)
+	}
+
 	return nil
 }
 
@@ -186,12 +193,17 @@ func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err e
 		pn.Neighbours = make(map[string]*rpc.Client, 0)
 	}
 	pn.Neighbours[addr] = neighbourConn
+
+	fmt.Println("[paxosnode] after neigh connection we have length", len(pn.Neighbours), " and ngbours ")
+	for k, _ := range pn.Neighbours {
+		fmt.Println(k)
+	}
+
 	*result = true
 	return nil
 }
 
 // Disseminates a message to all neighbours. This includes prepare and accept requests.
-//TODO[sharon]: Figure out best name for number field and add as param. Might be RPC
 func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err error) {
 	fmt.Println("[paxosnode] Disseminate request ", prepReq.Type)
 	numAccepted = 0
@@ -199,37 +211,95 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 	switch prepReq.Type {
 	case message.PREPARE:
 		fmt.Println("[paxosnode] PREPARE")
-		for k, v := range pn.Neighbours {
-			e := v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
-			if e != nil {
-				pn.RemoveFailedNeighbour(k)
-			} else {
-				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
-				// for now just a stub which increases count anyway
-				if prepReq.Equals(&respReq) {
-					numAccepted++
+
+		// Set up timer and channel for responses
+		timer := time.NewTimer(time.Minute)
+		defer timer.Stop()
+		go func() {
+			<- timer.C
+		}()
+		c := make(chan Message)
+
+		go func() {
+			for k, v := range pn.Neighbours {
+				fmt.Println("[paxosnode] disseminating to neighbour ", k)
+				var e error
+				var respReq Message
+				fmt.Println("[paxosnode] disseminating to neighbour inside ", k, "and RPC ", v)
+				e = v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
+				if e != nil {
+					pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 				}
+				c<-respReq
 			}
+		}()
+		// If a majority of the neighbours fail, then we move to the next round because
+		// we cannot reach a consensus this round anymore
+		if (pn.IsMajority(len(pn.FailedNeighbours))) {
+			pn.RoundNum++
+			return numAccepted, nil
 		}
+
 		// last send it to ourselves
 		pn.Acceptor.ProcessPrepare(prepReq, pn.RoundNum)
 		if prepReq.Equals(&respReq) {
 			numAccepted++
 		}
-	case message.ACCEPT:
-		fmt.Println("[paxosnode] ACCEPT")
-		for k, v := range pn.Neighbours {
-			e := v.Call("PaxosNodeRPCWrapper.ProcessAcceptRequest", prepReq, &respReq)
-			if e != nil {
-				pn.RemoveFailedNeighbour(k)
-			} else {
-				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
-				// for now just a stub which increases count anyway
+
+		// While we don't have a majority, increment count as responses come, or have
+		// timer go off and return error.
+		for !pn.IsMajority(numAccepted) {
+			select {
+			case <- timer.C:
+					return -1, errors.TimeoutError("Send prepare request")
+			case respReq := <- c:
 				if prepReq.Equals(&respReq) {
 					numAccepted++
+					if pn.IsMajority(numAccepted) {
+						return numAccepted, nil
+					}
 				}
 			}
 		}
+		return numAccepted, nil
+
+	case message.ACCEPT:
+		fmt.Println("[paxosnode] ACCEPT")
+
+		c := make(chan Message)
+		go func() {
+			for k, v := range pn.Neighbours {
+				fmt.Println("[paxosnode] disseminating to neighbour ", k)
+				e := v.Call("PaxosNodeRPCWrapper.ProcessAcceptRequest", prepReq, &respReq)
+				c<-respReq
+				if e != nil {
+					pn.FailedNeighbours = append(pn.FailedNeighbours, k)
+				} else {
+					// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
+					// for now just a stub which increases count anyway
+					if prepReq.Equals(&respReq) {
+						numAccepted++
+					}
+				}
+			}
+		}()
+		if (pn.IsMajority(len(pn.FailedNeighbours))) {
+			pn.RoundNum++
+			return numAccepted, nil
+		}
+
+		for !pn.IsMajority(numAccepted) {
+			select {
+			case respReq := <- c:
+				if prepReq.Equals(&respReq) {
+					numAccepted++
+					if pn.IsMajority(numAccepted) {
+						return numAccepted, nil
+					}
+				}
+			}
+		}
+
 		// last send it to ourselves
 		pn.Acceptor.ProcessAccept(prepReq, pn.RoundNum)
 		if prepReq.Equals(&respReq) {
@@ -237,22 +307,9 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			fmt.Println("[paxosnode] saying accepted for myself")
 			go pn.SayAccepted(&prepReq)
 		}
-	/* *****
-	case message.CONSENSUS:
-		fmt.Println("[paxosnode] CONSENSUS")
-		for k, v := range pn.Neighbours {
-			e := v.Call("PaxosNodeRPCWrapper.ProcessLearnRequest", prepReq, &respReq)
-			if e != nil {
-				pn.RemoveFailedNeighbour(k)
-			} else {
-				// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
-				// for now just a stub which increases count anyway
-				if prepReq.Equals(&respReq) {
-					numAccepted++
-				}
-			}
-		}
 
+		return numAccepted, nil
+	/* 
 		// Also update our own learner
 		pn.Learner.LearnValue(&prepReq)*/
 	default:
@@ -271,15 +328,9 @@ func (pn *PaxosNode) SayAccepted(m *Message) {
 	for k, v := range pn.Neighbours {
 		e := v.Call("PaxosNodeRPCWrapper.NotifyAboutAccepted", m, &counted)
 		if e != nil {
-			pn.RemoveFailedNeighbour(k)
+			pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 		}
 	}
-}
-
-// Locally accepts the accept request sent by a PN in the system.
-// TODO[sharon]: Figure out parameters. Might be RPC
-func AcceptAcceptRequest() (err error) {
-	return err
 }
 
 func (pn *PaxosNode) IsMajority(n int) bool {
@@ -308,9 +359,18 @@ func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
 
 func (pn *PaxosNode) ShouldRetry(numAccepted int, value string) {
 	if !pn.IsMajority(numAccepted) {
+		// Before retrying, we must clear the failed neighbours
+		pn.ClearFailedNeighbours()
 		time.Sleep(message.SLEEPTIME)
 		pn.WriteToPaxosNode(value)
 	}
+}
+
+func (pn *PaxosNode) ClearFailedNeighbours() {
+	for _, ip := range pn.FailedNeighbours {
+		pn.RemoveFailedNeighbour(ip)
+	}
+	pn.FailedNeighbours = nil
 }
 
 func (pn *PaxosNode) RemoveFailedNeighbour(ip string) {
@@ -335,36 +395,3 @@ func (pn *PaxosNode) IsInLog(m *Message) bool {
 	}
 	return false
 }
-/* Unused for now
-func (pn *PaxosNode) GetPreviousProposedValue() string {
-	highestProposal := uint64(0)
-	priorProposedValue := ""
-	// First check PN's neighbours to find the value of the highest-numbered proposal that they have accepted
-	for k, v := range pn.Neighbours {
-		var proposal Message
-		e := v.Call("PaxosNodeRPCWrapper.GetLastPromisedProposal", "placeholder", &proposal)
-		if e != nil {
-			pn.RemoveFailedNeighbour(k)
-		}
-
-		// Check if proposal is not an empty message first (when neighbours have not accepted any proposals yet)
-		// to avoid accessing fields of an empty struct
-		if (Message{}) != proposal {
-			if proposal.ID > highestProposal {
-				highestProposal = proposal.ID
-				priorProposedValue = proposal.Value
-			}
-		}
-	}
-
-	// Then check PN itself if it has already accepted a prior proposal
-	selfLastPromisedProposal := pn.Acceptor.LastPromised
-	if (Message{}) != selfLastPromisedProposal {
-		if selfLastPromisedProposal.ID > highestProposal {
-			priorProposedValue = selfLastPromisedProposal.Value
-		}
-	}
-
-	return priorProposedValue
-}
-*/

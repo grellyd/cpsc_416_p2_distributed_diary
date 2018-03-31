@@ -40,3 +40,9 @@ type ValueForRoundInLogExistsError string
 func (e ValueForRoundInLogExistsError) Error() string {
 	return fmt.Sprintf("Trying to write a value to an index in the Learner Log that has already been filled")
 }
+
+type TimeoutError string
+
+func (e TimeoutError) Error() string {
+	return fmt.Sprintf("The function [%s] called timed out.", string(e))
+}

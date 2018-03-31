@@ -2,6 +2,7 @@ package proposer
 
 import (
 	"consensuslib/message"
+	"fmt"
 )
 
 type Message = message.Message
@@ -16,21 +17,25 @@ type ProposerRole struct {
 type ProposerInterface interface {
 	// The proposer chooses a new prepare request ID and creates a prepare request
 	// to return to the PN
-	createPrepareRequest() Message
+	CreatePrepareRequest(roundNum int) Message
 	// This creates an accept request with the current prepare request ID and a candidate value for consensus
 	// to return to the PN. The value passed in is either an arbitrary value of the application's choosing, or is
 	// the value corresponding to the highest prepare request ID contained in the permission granted messages from other
 	// acceptors
-	createAcceptRequest(value string) Message
+	CreateAcceptRequest(value string, roundNum int) Message
 	// This is used by the PN to inform its proposer of the highest message ID value it has seen
 	// so far from other PNs. All future prepare requests must have a messageID greater than
 	// the messageID passed in
-	updateMessageID(messageID uint64)
+	UpdateMessageID(messageID uint64)
+
+	// This method increments current Message ID by 1 to ensure all proposers in the NW has same PSN
+	IncrementMessageID()
 }
 
 func (proposer *ProposerRole) CreatePrepareRequest(roundNum int) Message {
 	// Increment the messageID (n value) every time a new prepare request is made
 	proposer.messageID++
+	fmt.Println("[Proposer] message ID at proposer ", proposer.messageID)
 	prepareRequest := Message{
 		ID:             proposer.messageID,
 		Type:           message.PREPARE,
@@ -54,6 +59,12 @@ func (proposer *ProposerRole) CreateAcceptRequest(value string, roundNum int) Me
 
 func (proposer *ProposerRole) UpdateMessageID(messageID uint64) {
 	proposer.messageID = messageID
+}
+
+func (proposer *ProposerRole) IncrementMessageID() {
+	fmt.Println("[Proposer] increasing message ID before ", proposer.messageID)
+	proposer.messageID++
+	fmt.Println("[Proposer] increasing message ID after ", proposer.messageID)
 }
 
 // The constructor for a new ProposerRole object instance. A PN should only interact with just one

@@ -27,6 +27,7 @@ func NewAcceptor() AcceptorRole {
 		Message{},
 		Message{},
 	}
+	fmt.Println("[Acceptor] ", acc.ID)
 	return acc
 }
 
@@ -45,7 +46,7 @@ type AcceptorInterface interface {
 }
 
 func (acceptor *AcceptorRole) ProcessPrepare(msg Message, roundNum int) Message {
-	fmt.Println("[Acceptor] process prepare for round ", roundNum)
+	//fmt.Println("[Acceptor] process prepare for round ", roundNum)
 	// no any value had been proposed or n'>n
 	// then n' == n and ID' == ID (basically same proposer distributed proposal twice)
 	if &acceptor.LastPromised == nil ||
@@ -56,13 +57,13 @@ func (acceptor *AcceptorRole) ProcessPrepare(msg Message, roundNum int) Message 
 			acceptor.LastPromised.RoundNum == roundNum {
 		acceptor.LastPromised = msg
 	}
-	fmt.Printf("[Acceptor] promised id: %d, val: %s \n", acceptor.LastPromised.ID, acceptor.LastPromised.Value)
+	fmt.Printf("[Acceptor] promised id: %d, val: %s, round: %d \n", acceptor.LastPromised.ID, acceptor.LastPromised.Value, roundNum)
 	acceptor.saveIntoFile(acceptor.LastPromised)
 	return acceptor.LastPromised
 }
 
 func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
-	fmt.Println("[Acceptor] process accept")
+	//fmt.Println("[Acceptor] process accept")
 	if &acceptor.LastAccepted == nil {
 		if msg.ID == acceptor.LastPromised.ID &&
 			msg.FromProposerID == acceptor.LastPromised.FromProposerID {
@@ -81,7 +82,7 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 			acceptor.LastAccepted = msg
 		}
 	}
-	fmt.Printf("[Acceptor] accepted id: %d, val: %s \n", acceptor.LastAccepted.ID, acceptor.LastAccepted.Value)
+	fmt.Printf("[Acceptor] accepted id: %d, val: %s, round: %d \n", acceptor.LastAccepted.ID, acceptor.LastAccepted.Value, roundNum)
 	acceptor.saveIntoFile(acceptor.LastAccepted)
 	return acceptor.LastAccepted
 
@@ -153,12 +154,13 @@ func (a *AcceptorRole)saveIntoFile(msg Message) (err error) {
 			fmt.Println("[Acceptor] errored on opening file ", err)
 		}
 	}
-	defer f.Close()
+	//defer f.Close()
 	_, err = f.Write(msgJson)
 	if err != nil {
 		fmt.Println("[Acceptor] errored on writing into file ", err)
 	}
 	f.Close()
+	//fmt.Println("[Acceptor] saved message into file")
 	return err
 }
 
