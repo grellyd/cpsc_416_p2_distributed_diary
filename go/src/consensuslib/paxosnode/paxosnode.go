@@ -87,13 +87,6 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	// TODO: check whether should retry must return an error if no connection or something
 	pn.ShouldRetry(numAccepted, value)
 
-	// ***Unused For now***
-	// Get the value of the highest-numbered proposal previously accepted among all acceptors, if any
-	//previousProposedValue := pn.GetPreviousProposedValue()
-	//if previousProposedValue != "" {
-	//	value = previousProposedValue
-	//}
-
 	accReq := pn.Proposer.CreateAcceptRequest(value, pn.RoundNum)
 	fmt.Printf("[paxosnode] Accept request is id: %d , val: %s, type: %d \n", accReq.ID, accReq.Value, accReq.Type)
 	numAccepted, err = pn.DisseminateRequest(accReq)
@@ -400,36 +393,3 @@ func (pn *PaxosNode) IsInLog(m *Message) bool {
 	}
 	return false
 }
-/* Unused for now
-func (pn *PaxosNode) GetPreviousProposedValue() string {
-	highestProposal := uint64(0)
-	priorProposedValue := ""
-	// First check PN's neighbours to find the value of the highest-numbered proposal that they have accepted
-	for k, v := range pn.Neighbours {
-		var proposal Message
-		e := v.Call("PaxosNodeRPCWrapper.GetLastPromisedProposal", "placeholder", &proposal)
-		if e != nil {
-			pn.RemoveFailedNeighbour(k)
-		}
-
-		// Check if proposal is not an empty message first (when neighbours have not accepted any proposals yet)
-		// to avoid accessing fields of an empty struct
-		if (Message{}) != proposal {
-			if proposal.ID > highestProposal {
-				highestProposal = proposal.ID
-				priorProposedValue = proposal.Value
-			}
-		}
-	}
-
-	// Then check PN itself if it has already accepted a prior proposal
-	selfLastPromisedProposal := pn.Acceptor.LastPromised
-	if (Message{}) != selfLastPromisedProposal {
-		if selfLastPromisedProposal.ID > highestProposal {
-			priorProposedValue = selfLastPromisedProposal.Value
-		}
-	}
-
-	return priorProposedValue
-}
-*/
