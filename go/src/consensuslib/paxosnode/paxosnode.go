@@ -10,6 +10,7 @@ import (
 	"net/rpc"
 	"time"
 	"regexp"
+	"sync"
 )
 
 // Type Aliases
@@ -18,6 +19,8 @@ type AcceptorRole = acceptor.AcceptorRole
 type LearnerRole = learner.LearnerRole
 
 var portRegex = regexp.MustCompile(":([0-9])+")
+
+const TIMER  = 5*time.Second
 
 type PaxosNode struct {
 	Addr       string // IP:port, identifier
@@ -139,10 +142,10 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 			}
 			pn.Neighbours[ip] = neighbourConn
 		}
-		fmt.Println("[paxosnode] after I connected to PaxosNW length", len(pn.Neighbours), " and ngbours ")
+		/*fmt.Println("[paxosnode] after I connected to PaxosNW length", len(pn.Neighbours), " and ngbours ")
 		for k, v := range pn.Neighbours {
 			fmt.Println(k, "and rpc ", v )
-		}
+		}*/
 	}
 	return nil
 }
@@ -218,77 +221,115 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		fmt.Println("[paxosnode] PREPARE")
 
 		// Set up timer and channel for responses
-		timer := time.NewTimer(time.Minute)
+		//timer := time.NewTimer(time.Minute)
+		timer := time.NewTimer(TIMER)
 		defer timer.Stop()
 		go func() {
 			<- timer.C
 		}()
-		c := make(chan Message)
 
-		go func() {
-			for k, v := range pn.Neighbours {
-				fmt.Println("[paxosnode] disseminating to neighbour ", k)
-				var e error
+		nghbrNum := len(pn.Neighbours)
+		c := make(chan Message, nghbrNum)
+		errQueue := make(chan error, nghbrNum)
+		var wg sync.WaitGroup
+		wg.Add(nghbrNum)
+
+		// first send it to ourselves
+		resp := pn.Acceptor.ProcessPrepare(prepReq, pn.RoundNum)
+		if resp.Equals(&prepReq) {
+			numAccepted++
+			fmt.Println("[paxosnode] I accepted and the # is ", numAccepted)
+		}
+
+
+		for k, v := range pn.Neighbours {
+
+			fmt.Println("[paxosnode] disseminating to neighbour ", k)
+
+			go func(v *rpc.Client, k string) {
 				var respReq Message
 				fmt.Println("[paxosnode] disseminating to neighbour inside ", k, "and RPC ", v)
-				e = v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
-				if e != nil {
-					pn.FailedNeighbours = append(pn.FailedNeighbours, k)
-				}
+				errQueue <- v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
 				c<-respReq
-			}
-		}()
-		// If a majority of the neighbours fail, then we move to the next round because
-		// we cannot reach a consensus this round anymore
-		if (pn.IsMajority(len(pn.FailedNeighbours))) {
-			pn.RoundNum++
-			return numAccepted, nil
-		}
-
-		// last send it to ourselves
-		pn.Acceptor.ProcessPrepare(prepReq, pn.RoundNum)
-		if prepReq.Equals(&respReq) {
-			numAccepted++
-		}
-
-		// While we don't have a majority, increment count as responses come, or have
-		// timer go off and return error.
-		for !pn.IsMajority(numAccepted) {
+			}(v, k)
 			select {
-			case <- timer.C:
-					return -1, errors.TimeoutError("Send prepare request")
-			case respReq := <- c:
-				if prepReq.Equals(&respReq) {
-					numAccepted++
-					if pn.IsMajority(numAccepted) {
+			case err := <- errQueue:
+				fmt.Println("[paxosnode] channel worked on PREPARE")
+				if err != nil {
+					pn.FailedNeighbours = append(pn.FailedNeighbours, k)
+					if len(errQueue) >= len(pn.Neighbours)/2 {
+						fmt.Println("[paxosnode] checking errQueue ", len(errQueue))
+						pn.RoundNum++
 						return numAccepted, nil
 					}
+					fmt.Println("[paxosnode] on PREPARE RPC failed ", k)
+				} else {
+					req := <- c
+					if prepReq.Equals(&req) {
+						numAccepted++
+						if pn.IsMajority(numAccepted) {
+							return numAccepted, nil
+						}
+					}
 				}
+			case <- time.After(TIMER):
+				pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 			}
+
 		}
+
 		return numAccepted, nil
 
 	case message.ACCEPT:
 		fmt.Println("[paxosnode] ACCEPT")
+		nghbrNum := len(pn.Neighbours)
+		c := make(chan Message, nghbrNum)
+		errQueue := make(chan error, nghbrNum)
+		var wg sync.WaitGroup
+		wg.Add(nghbrNum)
 
-		c := make(chan Message)
-		go func() {
-			for k, v := range pn.Neighbours {
-				fmt.Println("[paxosnode] disseminating to neighbour ", k)
-				e := v.Call("PaxosNodeRPCWrapper.ProcessAcceptRequest", prepReq, &respReq)
+		for k, v := range pn.Neighbours {
+
+			go func(k string, v *rpc.Client) {
+				fmt.Println("[paxosnode] disseminating ACCEPT to neighbour ", k)
+				errQueue <- v.Call("PaxosNodeRPCWrapper.ProcessAcceptRequest", prepReq, &respReq)
 				c<-respReq
-				if e != nil {
+
+			}(k, v)
+			select {
+			case err := <- errQueue:
+				fmt.Println("[paxosnode] channel worked on PREPARE")
+				if err != nil {
 					pn.FailedNeighbours = append(pn.FailedNeighbours, k)
+					if len(errQueue) >= len(pn.Neighbours)/2 {
+						fmt.Println("[paxosnode] checking errQueue ", len(errQueue))
+						pn.RoundNum++
+						return numAccepted, nil
+					}
+					fmt.Println("[paxosnode] on PREPARE RPC failed ", k)
 				} else {
-					// TODO: check on what prepare request it returned, maybe to implement additional response OK/NOK
-					// for now just a stub which increases count anyway
-					if prepReq.Equals(&respReq) {
+					req := <- c
+					if prepReq.Equals(&req) {
 						numAccepted++
 					}
 				}
+			case <- time.After(TIMER):
+				pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 			}
-		}()
-		if (pn.IsMajority(len(pn.FailedNeighbours))) {
+
+
+		}
+
+		// last send it to ourselves
+		resp := pn.Acceptor.ProcessAccept(prepReq, pn.RoundNum)
+		if resp.Equals(&prepReq) {
+			numAccepted++
+			fmt.Println("[paxosnode] I accepted and the # is ", numAccepted)
+			go pn.SayAccepted(&prepReq)
+		}
+
+
+/*		if (pn.IsMajority(len(pn.FailedNeighbours))) {
 			pn.RoundNum++
 			return numAccepted, nil
 		}
@@ -303,15 +344,8 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 					}
 				}
 			}
-		}
+		}*/
 
-		// last send it to ourselves
-		pn.Acceptor.ProcessAccept(prepReq, pn.RoundNum)
-		if prepReq.Equals(&respReq) {
-			numAccepted++
-			fmt.Println("[paxosnode] saying accepted for myself")
-			go pn.SayAccepted(&prepReq)
-		}
 
 		return numAccepted, nil
 	/* 
@@ -349,9 +383,9 @@ func (pn *PaxosNode) IsMajority(n int) bool {
 // and notifies learner when the # for this particular message is a majority to write into the log
 // TODO: think about moving this responsibility to the learner
 func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
-	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, round # ", pn.RoundNum)
+	//fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, round # ", pn.RoundNum)
 	numSeen := pn.Learner.NumAlreadyAccepted(m)
-	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, how many accepted ", numSeen)
+	//fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, how many accepted ", numSeen)
 	if pn.IsMajority(numSeen) {
 		// TODO: Learner.LearnValue returns the next round #; use the new round # somewhere?
 		if !pn.IsInLog(m) {
@@ -359,13 +393,14 @@ func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
 			pn.RoundNum++
 		}
 	}
-	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, value learned, round # ", pn.RoundNum)
+	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, value learned, next round # ", pn.RoundNum)
 }
 
 func (pn *PaxosNode) ShouldRetry(numAccepted int, value string) {
 	if !pn.IsMajority(numAccepted) {
 		// Before retrying, we must clear the failed neighbours
 		pn.ClearFailedNeighbours()
+		numAccepted = 0
 		time.Sleep(message.SLEEPTIME)
 		pn.WriteToPaxosNode(value)
 	}

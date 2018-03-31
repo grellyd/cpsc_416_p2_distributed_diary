@@ -29,10 +29,10 @@ func (p *PaxosNodeRPCWrapper) ProcessPrepareRequest(m Message, r *Message) (err 
 // RPC call received from other node to process accept request
 // If the request accepted, it gets disseminated to all the Learners in the Paxos NW
 func (p *PaxosNodeRPCWrapper) ProcessAcceptRequest(m Message, r *Message) (err error) {
-	fmt.Println("[Client] RPC processing accept request")
+	fmt.Println("[paxosnodewrapper] RPC processing accept request")
 	*r = p.paxosNode.Acceptor.ProcessAccept(m, p.paxosNode.RoundNum)
 	if m.Equals(r) {
-		fmt.Println("[Client] saying accepted")
+		fmt.Println("[paxosnodewrapper] saying accepted")
 		go p.paxosNode.SayAccepted(r)
 	}
 	return nil

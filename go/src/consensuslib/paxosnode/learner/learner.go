@@ -39,7 +39,7 @@ func (l *LearnerRole) InitializeLog(log []Message) (err error) {
 	fmt.Println("[learner] Initializing log with size ", len(log))
 	l.Log = log
 	l.CurrentRound = len(log)
-
+	fmt.Println("[learner] Initializing next round ", l.CurrentRound)
 	return nil
 }
 
