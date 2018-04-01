@@ -98,19 +98,10 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	}
 	fmt.Println("[paxosnode] Accepted ", numAccepted)
 	// If majority is not reached, sleep for a while and try again
-	// TODO: check whether should retry must return an error if no connection or something
 	pn.ShouldRetry(numAccepted, value)
 
 	// Remove all the failed neighbours at the end of a round
 	pn.ClearFailedNeighbours()
-
-	/* Shouldn't be there, commented out. But not sure how it will influence other code, so, don't delete yet
-	// same for all code marked *****
-	accReq.Type = message.CONSENSUS
-	_, err = pn.DisseminateRequest(accReq)
-	if err != nil {
-		return false, err
-	}*/
 
 	return success, nil
 }
@@ -265,7 +256,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 					if prepReq.Equals(&req) {
 						numAccepted++
 						if pn.IsMajority(numAccepted) {
-							return numAccepted, nil
+							//return numAccepted, nil
 						}
 					}
 				}
@@ -325,29 +316,8 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			go pn.SayAccepted(&prepReq)
 		}
 
-
-/*		if (pn.IsMajority(len(pn.FailedNeighbours))) {
-			pn.RoundNum++
-			return numAccepted, nil
-		}
-
-		for !pn.IsMajority(numAccepted) {
-			select {
-			case respReq := <- c:
-				if prepReq.Equals(&respReq) {
-					numAccepted++
-					if pn.IsMajority(numAccepted) {
-						return numAccepted, nil
-					}
-				}
-			}
-		}*/
-
-
 		return numAccepted, nil
-	/* 
-		// Also update our own learner
-		pn.Learner.LearnValue(&prepReq)*/
+
 	default:
 		return -1, errors.InvalidMessageTypeError(prepReq)
 	}
