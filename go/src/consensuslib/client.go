@@ -1,11 +1,8 @@
 package consensuslib
-
 import (
 	"consensuslib/paxosnode"
-	"consensuslib/util/networking"
-	"filelogger"
+	"filelogger/singletonlogger"
 	"fmt"
-	"log"
 	"net"
 	"net/rpc"
 	"time"
@@ -18,7 +15,6 @@ type PaxosNodeRPCWrapper = paxosnode.PaxosNodeRPCWrapper
 type Client struct {
 	localAddr     string
 	heartbeatRate time.Duration
-	logger        *filelogger.Logger
 
 	listener        net.Listener
 	serverRPCClient *rpc.Client
@@ -26,30 +22,15 @@ type Client struct {
 	paxosNode           *paxosnode.PaxosNode
 	paxosNodeRPCWrapper *PaxosNodeRPCWrapper
 	neighbors           []string
-
-	errLog *log.Logger
-	outLog *log.Logger
 }
 
-<<<<<<< HEAD
-
-// TODO: pass in logger
-func NewClient(port int, isLocal bool, heartbeatRate time.Duration) (client *Client, err error) {
-	/****
-	Creates a new client so that it is ready to connect to the server.
-
-	Set `localPort` to a valid port # if the server is running on the same machine (e.g. both are running on 127.0.0.1).
-	Otherwise, set it to < 0 in production, and the client will use the public outbound IP to register with the server.
-	****/
-=======
 // NewClient creates a new Client, ready to connect
-func NewClient(localAddr string, heartbeatRate time.Duration, logger *filelogger.Logger) (client *Client, err error) {
->>>>>>> 8d01746... Working basic logger
+func NewClient(clientAddr string, heartbeatRate time.Duration) (client *Client, err error) {
 	client = &Client{
 		heartbeatRate: heartbeatRate,
-		logger:        logger,
 	}
 
+	/*
 	addr := &net.TCPAddr{}
 	if isLocal {
 		localAddr := fmt.Sprintf("127.0.0.1:%d", port)
@@ -66,6 +47,11 @@ func NewClient(localAddr string, heartbeatRate time.Duration, logger *filelogger
 		if err != nil {
 			return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: Unable to resolve a public address: %s", err)
 		}
+	}
+	*/
+	addr, err := net.ResolveTCPAddr("tcp", clientAddr)
+	if err != nil {
+		return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: unable to resolve client addr: %s", err)
 	}
 
 	client.listener, err = net.ListenTCP("tcp", addr)
@@ -98,7 +84,7 @@ func (c *Client) Connect(serverAddr string) (err error) {
 	if err != nil {
 		return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to connect to server: %s", err)
 	}
-	fmt.Printf("[LIB/CLIENT]#Connect: Registering to server at: %s\n", serverAddr)
+	singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#Connect: Registering to server at: %s\n", serverAddr))
 	err = c.serverRPCClient.Call("Server.Register", c.localAddr, &c.neighbors)
 	if err != nil {
 		return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to register with server: %s", err)
@@ -106,7 +92,7 @@ func (c *Client) Connect(serverAddr string) (err error) {
 	go c.SendHeartbeats()
 
 	if len(c.neighbors) > 0 {
-		fmt.Printf("[LIB/CLIENT]#Connect: Neighbors: %v\n", c.neighbors)
+		singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#Connect: Neighbors: %v\n", c.neighbors))
 		err = c.paxosNode.SendNeighbours(c.neighbors)
 		if err != nil {
 			return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to connect to neighbors: %s", err)
@@ -134,7 +120,7 @@ func (c *Client) Read() (value string, err error) {
 	if err != nil {
 		return "", fmt.Errorf("[LIB/CLIENT]#Read: Error while getting the log: %s", err)
 	}
-	fmt.Printf("[LIB/CLIENT]#Read: Log = '%v'\n", log)
+	singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#Read: Log = '%v'\n", log))
 	for _, m := range log {
 		value += m.Value + "\n"
 	}

@@ -12,11 +12,13 @@
 package main
 
 import (
-	//"consensuslib"
-	//"distributeddiaryapp/cli"
+	"consensuslib"
+	"distributeddiaryapp/cli"
+	"distributeddiaryapp/networking"
 	"filelogger/singletonlogger"
 	"filelogger/state"
 	"fmt"
+	"time"
 	"os"
 	"regexp"
 	"strconv"
@@ -50,16 +52,16 @@ func main() {
 	err = singletonlogger.NewSingletonLogger("app", logstate)
 	checkError(err)
 	singletonlogger.Debug("starting application at " + localAddr)
-	//client, err := consensuslib.NewClient(localAddr, 1*time.Millisecond)
+	client, err := consensuslib.NewClient(localAddr, 1*time.Millisecond)
 	checkError(err)
 	singletonlogger.Debug("created client at " + localAddr)
-	//err = client.Connect(serverAddr)
+	err = client.Connect(serverAddr)
 	checkError(err)
 	singletonlogger.Debug("connected to server at " + serverAddr)
 	singletonlogger.Debug("serving cli")
-	//serveCli(client)
+	serveCli(client)
 }
-/*
+
 func serveCli(client *consensuslib.Client) {
 	for {
 		command := cli.Run()
@@ -90,7 +92,6 @@ func serveCli(client *consensuslib.Client) {
 		}
 	}
 }
-*/
 
 // Exit nicely from the program
 func Exit() {
@@ -131,7 +132,11 @@ func parseArgs(args []string) (serverAddr string, clientAddr string, logstate st
 	if isLocal {
 		clientAddr = "127.0.0.1" + addrEnd
 	} else {
-		clientAddr = addrEnd
+		ip, err := networking.GetOutboundIP()
+		if err != nil {
+			return serverAddr, clientAddr, logstate, fmt.Errorf("error while fetching ip: %s", err)
+		}
+		clientAddr = ip + addrEnd
 	}
 	return serverAddr, clientAddr, logstate, nil
 }
