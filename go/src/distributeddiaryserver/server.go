@@ -12,7 +12,7 @@ package main
 
 import (
 	"fmt"
-	//"consensuslib"
+	"consensuslib"
 	"filelogger/singletonlogger"
 	"filelogger/state"
 	"os"
@@ -46,10 +46,10 @@ func main() {
 	singletonlogger.Debug("Logger created")
 	singletonlogger.Debug("Chosen Addr: " + addr)
 	singletonlogger.Debug("Creating consensuslib server for " + addr)
-	//server, err := consensuslib.NewServer(addr, logger)
+	server, err := consensuslib.NewServer(addr)
 	checkError(err)
 	singletonlogger.Info("Serving at " + addr)
-	//err = server.Serve()
+	err = server.Serve()
 	checkError(err)
 }
 

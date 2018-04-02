@@ -1,8 +1,8 @@
 package consensuslib
 
 import (
+	"filelogger/singletonlogger"
 	"consensuslib/errors"
-	"filelogger"
 	"fmt"
 	"net"
 	"net/rpc"
@@ -14,7 +14,6 @@ import (
 type Server struct {
 	rpcServer *rpc.Server
 	listener  net.Listener
-	logger    *filelogger.Logger
 }
 
 // User represents a connected client
@@ -38,16 +37,9 @@ var (
 )
 
 // NewServer creates a new server ready to register paxosnodes
-func NewServer(addr string, logger *filelogger.Logger) (server *Server, err error) {
+func NewServer(addr string) (server *Server, err error) {
 	server = &Server{
 		rpcServer: rpc.NewServer(),
-<<<<<<< HEAD
-		// TODO: use these
-		errLog: log.New(os.Stderr, "[ConsensusLib/serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds),
-		outLog: log.New(os.Stderr, "[ConsensusLib/serv] ", log.Lshortfile|log.LUTC|log.Lmicroseconds),
-=======
-		logger:    logger,
->>>>>>> 8d01746... Working basic logger
 	}
 	server.rpcServer.Register(server)
 	listener, err := net.Listen("tcp", addr)
@@ -55,8 +47,7 @@ func NewServer(addr string, logger *filelogger.Logger) (server *Server, err erro
 		return nil, fmt.Errorf("unable to create a listener on the server addres: %s", err)
 	}
 	server.listener = listener
-	fmt.Println("[ConsensusLib/serv] Server listening on ", addr)
-	logger.Info("Server started at " + addr)
+	singletonlogger.Info("Server started at " + listener.Addr().String())
 	return server, nil
 }
 
@@ -67,8 +58,7 @@ func (s *Server) Serve() error {
 		if err != nil {
 			return fmt.Errorf("[ConsensusLib/serv] Unable to accept connection: %s", err)
 		}
-
-		fmt.Printf("[ConsensusLib/serv] Serving %s\n", s.listener.Addr().String())
+		singletonlogger.Debug(fmt.Sprintf("[ConsensusLib/serv] Serving %s\n", s.listener.Addr().String()))
 		go s.rpcServer.ServeConn(conn)
 	}
 }
@@ -86,7 +76,7 @@ func (s *Server) Register(addr string, res *[]string) error {
 		time.Now().UnixNano(),
 	}
 
-	go monitor(addr, time.Duration(heartBeat)*time.Second, s.logger)
+	go monitor(addr, time.Duration(heartBeat)*time.Second)
 
 	neighbourAddresses := make([]string, 0)
 
@@ -98,7 +88,7 @@ func (s *Server) Register(addr string, res *[]string) error {
 	}
 	*res = neighbourAddresses
 
-	s.logger.Info(fmt.Sprintf("Got Register from %s", addr))
+	singletonlogger.Info(fmt.Sprintf("Got Register from %s", addr))
 
 	return nil
 
@@ -126,16 +116,16 @@ func (s *Server) CheckAlive(addr string, alive *bool) error {
 }
 
 // from proj1 server.go implementation by Ivan Beschastnikh, adapted by Graham Brown
-func monitor(k string, heartBeatInterval time.Duration, logger *filelogger.Logger) {
+func monitor(k string, heartBeatInterval time.Duration) {
 	for {
 		allUsers.Lock()
 		if time.Now().UnixNano()-allUsers.all[k].Heartbeat > int64(heartBeatInterval) {
-			logger.Info(fmt.Sprintf("%s timed out", allUsers.all[k].Address))
+			singletonlogger.Info(fmt.Sprintf("%s timed out", allUsers.all[k].Address))
 			delete(allUsers.all, k)
 			allUsers.Unlock()
 			return
 		}
-		logger.Info(fmt.Sprintf("%s is alive", allUsers.all[k].Address))
+		singletonlogger.Info(fmt.Sprintf("%s is alive", allUsers.all[k].Address))
 		allUsers.Unlock()
 		time.Sleep(heartBeatInterval)
 	}
