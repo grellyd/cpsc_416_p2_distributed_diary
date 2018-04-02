@@ -39,12 +39,11 @@ Valid options:
 var validArgs = regexp.MustCompile("[0-9]{1,5}( " + localFlag + ")*( " + debugFlag +")*")
 
 func main() {
-	port, logstate, isLocal, err := parseArgs(os.Args[1:])
+	addr, logstate, err := parseArgs(os.Args[1:])
 	checkError(err)
 	err = singletonlogger.NewSingletonLogger("server", logstate)
 	checkError(err)
 	singletonlogger.Debug("Logger created")
-	addr := setAddr(port, isLocal)
 	singletonlogger.Debug("Chosen Addr: " + addr)
 	singletonlogger.Debug("Creating consensuslib server for " + addr)
 	//server, err := consensuslib.NewServer(addr, logger)
@@ -54,18 +53,20 @@ func main() {
 	checkError(err)
 }
 
-func parseArgs(args []string) (port int, logstate state.State, isLocal bool, err error) {
+func parseArgs(args []string) (addr string, logstate state.State, err error) {
 	if !validArgs.MatchString(strings.Join(args, " ")) {
 		fmt.Println(usage)
 		os.Exit(1)
 	}
+	port := 0
+	isLocal := false
 	for i, arg := range(args) {
 		// positional args
 		switch i {
 		case 0: 
-		port, err = strconv.Atoi(args[0])
+		port, err = strconv.Atoi(args[i])
 		if err != nil {
-			return port, logstate, isLocal, fmt.Errorf("error while converting port: %s", err)
+			return addr, logstate, fmt.Errorf("error while converting port: %s", err)
 		}
 		default:
 			// option flags
@@ -77,18 +78,15 @@ func parseArgs(args []string) (port int, logstate state.State, isLocal bool, err
 			}
 		}
 	}
-	return port, logstate, isLocal, nil
-}
-
-func setAddr(port int, isLocal bool) (addr string) {
 	addrEnd := fmt.Sprintf(":%d", port)
 	if isLocal {
-		addr = "127.0.0.1:" + addrEnd
+		addr = "127.0.0.1" + addrEnd
 	} else {
 		addr = addrEnd
 	}
-	return addr
+	return addr, logstate, nil
 }
+
 
 func checkError(err error) {
 	if err != nil {
