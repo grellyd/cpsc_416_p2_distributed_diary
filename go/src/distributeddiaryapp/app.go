@@ -12,75 +12,54 @@
 package main
 
 import (
-	"consensuslib"
-	"distributeddiaryapp/cli"
-	"filelogger"
+	//"consensuslib"
+	//"distributeddiaryapp/cli"
+	"filelogger/singletonlogger"
+	"filelogger/state"
 	"fmt"
 	"os"
 	"regexp"
-	"time"
 	"strconv"
+	"strings"
 )
 
-var logger *filelogger.Logger
-var validAddr = regexp.MustCompile("[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,5}")
+var validArgs = regexp.MustCompile("[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,5} [0-9]{1,5}( " + localFlag + ")*( " + debugFlag +")*")
 
 const (
 	serverAddrDefault = "127.0.0.1:12345"
 	localAddrDefault  = "127.0.0.1:0"
+	debugFlag = "--debug"
+	localFlag = "--local"
+	usage = `==================================================
+The Chamber of Secrets: A Distributed Diary App
+==================================================
+Usage: go run app.go serverAddress PORT [options]
+
+Server address must be of the form 255.255.255.255:12345
+
+Valid options:
+
+--local : run on local machine at 127.0.0.1 with the specified port
+--debug : run with debuggging turned on for verbose logging
+`
 )
 
-// TODO: Handle '--debug' flag to set logger into filelogger.DEBUGGING state
 func main() {
-	var err error
-	logger, err = filelogger.NewFileLogger("app", filelogger.NORMAL)
+	serverAddr, localAddr, logstate, err := parseArgs(os.Args[1:])
 	checkError(err)
-	serverAddr, localAddr, err := parseArgs(os.Args)
+	err = singletonlogger.NewSingletonLogger("app", logstate)
 	checkError(err)
-	logger.Debug("starting application")
-	client, err := consensuslib.NewClient(localAddr, 1*time.Millisecond, logger)
+	singletonlogger.Debug("starting application at " + localAddr)
+	//client, err := consensuslib.NewClient(localAddr, 1*time.Millisecond)
 	checkError(err)
-	logger.Debug("created client")
-	err = client.Connect(serverAddr)
+	singletonlogger.Debug("created client at " + localAddr)
+	//err = client.Connect(serverAddr)
 	checkError(err)
-	logger.Debug("serving")
-	serveCli(client)
+	singletonlogger.Debug("connected to server at " + serverAddr)
+	singletonlogger.Debug("serving cli")
+	//serveCli(client)
 }
-
-func setup() *consensuslib.Client {
-	serverAddr := ""
-	localPort := 0
-	isLocal := false
-
-	// Validate arguments
-	if len(os.Args[1:]) == 2 {
-		// Local arg not included; we're using a public IP
-		serverAddr = os.Args[1]
-		intPort, err := strconv.Atoi(os.Args[2])
-		if err != nil {
-			printCommandLineUsageAndExit()
-		}
-		localPort = intPort
-	} else if len(os.Args[1:]) == 3 {
-		// Local arg included; we're running this on 127.0.0.1
-		serverAddr = os.Args[1]
-		intPort, err := strconv.Atoi(os.Args[2])
-		if err != nil {
-			printCommandLineUsageAndExit()
-		}
-		localPort = intPort
-		isLocal = true
-	} else {
-		printCommandLineUsageAndExit()
-	}
-
-	client, err := consensuslib.NewClient(localPort, isLocal, 1*time.Millisecond)
-	checkError(err)
-	err = client.Connect(serverAddr)
-	checkError(err)
-	return client
-}
-
+/*
 func serveCli(client *consensuslib.Client) {
 	for {
 		command := cli.Run()
@@ -88,22 +67,13 @@ func serveCli(client *consensuslib.Client) {
 		case cli.ALIVE:
 			isAlive, err := client.IsAlive()
 			checkError(err)
-// 			fmt.Printf("[DD APP] Alive: %v\n", isAlive)
-// 		case cli.EXIT:
-// 			fmt.Println("[DD APP] Closing the Chamber of Secrets...")
-// 			fmt.Println("[DD APP] Goodbye!")
-// 			os.Exit(0)
-// 		case cli.READ:
-// 			value, err := client.Read()
-// 			checkError(err)
-// 			fmt.Printf("[DD APP] Reading: '%s'\n", value)
-			logger.Info(fmt.Sprintf("Alive: %v", isAlive))
+			singletonlogger.Info(fmt.Sprintf("Alive: %v", isAlive))
 		case cli.EXIT:
 			Exit()
 		case cli.READ:
 			value, err := client.Read()
 			checkError(err)
-			logger.Info(fmt.Sprintf("Reading: \n%s", value))
+			singletonlogger.Info(fmt.Sprintf("Reading: \n%s", value))
 		case cli.WRITE:
 			value := ""
 			for i, s := range *command.Data {
@@ -120,40 +90,55 @@ func serveCli(client *consensuslib.Client) {
 		}
 	}
 }
+*/
 
 // Exit nicely from the program
 func Exit() {
 	// TODO: Delete temp folder
-	logger.Info("Closing the Chamber of Secrets...")
-	logger.Info("Goodbye!")
-	logger.Exit()
+	singletonlogger.Info("Closing the Chamber of Secrets...")
+	singletonlogger.Info("Goodbye!")
 	os.Exit(0)
 }
 
-func parseArgs(args []string) (serverAddr string, localAddr string, err error) {
-	serverAddr = args[1]
-	localAddr = args[2]
-	if !validAddr.MatchString(serverAddr) || !validAddr.MatchString(localAddr) {
-		logger.Error("arguments are not valid addresses")
-		logger.Warning("contining with default addresses")
-		serverAddr = serverAddrDefault
-		localAddr = localAddrDefault
+func parseArgs(args []string) (serverAddr string, clientAddr string, logstate state.State, err error) {
+	if !validArgs.MatchString(strings.Join(args, " ")) {
+		fmt.Println(usage)
+		os.Exit(1)
 	}
-	return serverAddr, localAddr, nil
+	port := 0
+	isLocal := false
+	for i, arg := range(args) {
+		// positional args
+		switch i {
+		case 0:
+			serverAddr = args[i]
+		case 1: 
+		port, err = strconv.Atoi(args[i])
+		if err != nil {
+			return serverAddr, clientAddr, logstate, fmt.Errorf("error while converting port: %s", err)
+		}
+		default:
+			// option flags
+			switch arg {
+			case localFlag:
+				isLocal = true
+			case debugFlag:
+				logstate = state.DEBUGGING
+			}
+		}
+	}
+	addrEnd := fmt.Sprintf(":%d", port)
+	if isLocal {
+		clientAddr = "127.0.0.1" + addrEnd
+	} else {
+		clientAddr = addrEnd
+	}
+	return serverAddr, clientAddr, logstate, nil
 }
 
 func checkError(err error) {
 	if err != nil {
-		if logger != nil {
-			logger.Fatal(err.Error())
-		} else {
-			fmt.Println(err.Error())
-		}
+		singletonlogger.Fatal(err.Error())
 		os.Exit(1)
 	}
-}
-
-func printCommandLineUsageAndExit() {
-	fmt.Println("USAGE: go run app.go SERVERIP:PORT LOCALPORT [isLocal?]")
-	os.Exit(1)
 }
