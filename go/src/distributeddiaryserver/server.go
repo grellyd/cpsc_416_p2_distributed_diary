@@ -4,93 +4,95 @@
 // Or do `go install` then `distributeddiaryserver` to run the binary
 // The last is @grellyd preferred for ease, but requires you to add `go/bin` to your $PATH variable
 
-// USAGE: go run server.go PORT [LOCAL]
-// Go Run Example: `go run distributeddiaryserver/server.go 12345 LOCAL` -- To run server on 127.0.0.1:12345
+// Go Run Example: `go run distributeddiaryserver/server.go 12345 --local` -- To run server on 127.0.0.1:12345
 // Go Run Example: `go run distributeddiaryserver/server.go 12345` -- To run server on the outbound IP address, on port 12345
-// Installed Run example: `distributeddiaryserver 127.0.0.1:12345`
+// Installed Run example: `distributeddiaryserver 12345`
 
 package main
 
 import (
 	"fmt"
-	"consensuslib"
-	"filelogger"
+	//"consensuslib"
+	"filelogger/singletonlogger"
+	"filelogger/state"
 	"os"
+	"strings"
 	"strconv"
 	"regexp"
 )
 
 const (
-	serverAddrDefault = "127.0.0.1:12345"
+	localFlag = "--local"
+	debugFlag = "--debug"
+	usage = `==================================================
+The Chamber of Secrets: A Distributed Diary Server
+==================================================
+Usage: go run server.go PORT [options]
+
+Valid options:
+
+--local : run on local machine at 127.0.0.1 with the specified port
+--debug : run with debuggging turned on for verbose logging
+`
 )
 
-var logger *filelogger.Logger
-var validAddr = regexp.MustCompile("[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,5}")
+var validArgs = regexp.MustCompile("[0-9]{1,5}( " + localFlag + ")*( " + debugFlag +")*")
 
 func main() {
-	var err error
-	logger, err = filelogger.NewFileLogger("server", filelogger.NORMAL)
+	port, logstate, isLocal, err := parseArgs(os.Args[1:])
 	checkError(err)
-	logger.Debug("Logger created")
-	addr := ""
-
-	// Validate arguments
-	if len(os.Args[1:]) == 1 {
-		// LOCAL arg not included; use public IP
-		intPort, err := strconv.Atoi(os.Args[1])
-		if err != nil {
-			printCommandLineUsageAndExit()
-		}
-		addr = fmt.Sprintf(":%d", intPort)
-	} else if len(os.Args[1:]) == 2 {
-		// LOCAL included; use private IP
-		intPort, err := strconv.Atoi(os.Args[1])
-		if err != nil {
-			printCommandLineUsageAndExit()
-		}
-		addr = fmt.Sprintf("127.0.0.1:%d", intPort)
-	} else {
-		printCommandLineUsageAndExit()
-	}
-
-	// addr, err := parseArgs(os.Args)
-	// checkError(err)
-	
-	fmt.Printf("[DD SERVER] Calling consensuslib.NewServer with address %s\n", addr)
-	server, err := consensuslib.NewServer(addr, logger)
+	err = singletonlogger.NewSingletonLogger("server", logstate)
 	checkError(err)
-	err = server.Serve()
+	singletonlogger.Debug("Logger created")
+	addr := setAddr(port, isLocal)
+	singletonlogger.Debug("Chosen Addr: " + addr)
+	singletonlogger.Debug("Creating consensuslib server for " + addr)
+	//server, err := consensuslib.NewServer(addr, logger)
+	checkError(err)
+	singletonlogger.Info("Serving at " + addr)
+	//err = server.Serve()
 	checkError(err)
 }
 
-func parseArgs(args []string) (serverAddr string, err error) {
-	if len(args) > 1 {
-		serverAddr = args[1] 
-		if !validAddr.MatchString(serverAddr) {
-			logger.Error("argument is not a valid address")
-			logger.Warning("contining with default address of " + serverAddrDefault)
-			serverAddr = serverAddrDefault
-		}
-		return serverAddr, nil
+func parseArgs(args []string) (port int, logstate state.State, isLocal bool, err error) {
+	if !validArgs.MatchString(strings.Join(args, " ")) {
+		fmt.Println(usage)
+		os.Exit(1)
 	}
-	logger.Error("argument is not a valid address")
-	logger.Warning("contining with default address of " + serverAddrDefault)
-	serverAddr = serverAddrDefault
-	return serverAddr, nil
+	for i, arg := range(args) {
+		// positional args
+		switch i {
+		case 0: 
+		port, err = strconv.Atoi(args[0])
+		if err != nil {
+			return port, logstate, isLocal, fmt.Errorf("error while converting port: %s", err)
+		}
+		default:
+			// option flags
+			switch arg {
+			case localFlag:
+				isLocal = true
+			case debugFlag:
+				logstate = state.DEBUGGING
+			}
+		}
+	}
+	return port, logstate, isLocal, nil
+}
+
+func setAddr(port int, isLocal bool) (addr string) {
+	addrEnd := fmt.Sprintf(":%d", port)
+	if isLocal {
+		addr = "127.0.0.1:" + addrEnd
+	} else {
+		addr = addrEnd
+	}
+	return addr
 }
 
 func checkError(err error) {
 	if err != nil {
-		if logger != nil {
-			logger.Fatal(err.Error())
-		} else {
-			fmt.Println(err.Error())
-		}
+		singletonlogger.Fatal(err.Error())
 		os.Exit(1)
 	}
-}
-
-func printCommandLineUsageAndExit() {
-	fmt.Println("USAGE: go run server.go PORT [LOCAL?]")
-	os.Exit(1)
 }
