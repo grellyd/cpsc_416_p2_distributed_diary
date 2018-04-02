@@ -1,20 +1,18 @@
 package logger
 
 import (
+	"filelogger/level"
+	"filelogger/state"
 	"fmt"
 	"log"
 	"os"
 	"time"
-	"filelogger/state"
-	"filelogger/level"
 )
-
 
 /*
 	It would be brilliant to support a format call like in fmt.Printf
 	Currently most calls look like: logger.Info(fmt.Sprintf("this is an example %v", valuedthing))
 */
-
 
 // Logger is a logger which can log to disk
 type Logger struct {
@@ -63,7 +61,6 @@ func GetLogger(loggerName string) (logger *Logger) {
 	}
 	return logger
 }
-
 
 // Exit the logger
 func (l *Logger) Exit() {

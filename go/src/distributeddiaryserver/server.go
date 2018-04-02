@@ -11,20 +11,20 @@
 package main
 
 import (
-	"fmt"
 	"consensuslib"
 	"filelogger/singletonlogger"
 	"filelogger/state"
+	"fmt"
 	"os"
-	"strings"
-	"strconv"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
 const (
 	localFlag = "--local"
 	debugFlag = "--debug"
-	usage = `==================================================
+	usage     = `==================================================
 The Chamber of Secrets: A Distributed Diary Server
 ==================================================
 Usage: go run server.go PORT [options]
@@ -36,7 +36,7 @@ Valid options:
 `
 )
 
-var validArgs = regexp.MustCompile("[0-9]{1,5}( " + localFlag + ")*( " + debugFlag +")*")
+var validArgs = regexp.MustCompile("[0-9]{1,5}( " + localFlag + ")*( " + debugFlag + ")*")
 
 func main() {
 	addr, logstate, err := parseArgs(os.Args[1:])
@@ -60,14 +60,14 @@ func parseArgs(args []string) (addr string, logstate state.State, err error) {
 	}
 	port := 0
 	isLocal := false
-	for i, arg := range(args) {
+	for i, arg := range args {
 		// positional args
 		switch i {
-		case 0: 
-		port, err = strconv.Atoi(args[i])
-		if err != nil {
-			return addr, logstate, fmt.Errorf("error while converting port: %s", err)
-		}
+		case 0:
+			port, err = strconv.Atoi(args[i])
+			if err != nil {
+				return addr, logstate, fmt.Errorf("error while converting port: %s", err)
+			}
 		default:
 			// option flags
 			switch arg {
@@ -86,7 +86,6 @@ func parseArgs(args []string) (addr string, logstate state.State, err error) {
 	}
 	return addr, logstate, nil
 }
-
 
 func checkError(err error) {
 	if err != nil {

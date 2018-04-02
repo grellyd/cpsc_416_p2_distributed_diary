@@ -5,7 +5,7 @@
 // The last is @grellyd preferred for ease, but requires you to add `go/bin` to your $PATH variable
 
 // USAGE: go run app.go SERVERIP:PORT LOCALPORT [isLocal?]
-// Go Run Example (Dev): `go run distributeddiaryapp/app.go 127.0.0.1:12345 8080 LOCAL` -- To run on 127.0.0.1:8080
+// Go Run Example (Dev): `go run distributeddiaryapp/app.go 127.0.0.1:12345 8080 --local` -- To run on 127.0.0.1:8080
 // Go Run Example (Prod): `go run distributeddiaryapp/app.go 127.0.0.1:12345 8080` -- To run on machine's outbound IP on port 8080
 // Installed Run example: `distributeddiaryapp 127.0.0.1:12345 8080`
 
@@ -18,21 +18,21 @@ import (
 	"filelogger/singletonlogger"
 	"filelogger/state"
 	"fmt"
-	"time"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
-var validArgs = regexp.MustCompile("[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,5} [0-9]{1,5}( " + localFlag + ")*( " + debugFlag +")*")
+var validArgs = regexp.MustCompile("[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,5} [0-9]{1,5}( " + localFlag + ")*( " + debugFlag + ")*")
 
 const (
 	serverAddrDefault = "127.0.0.1:12345"
 	localAddrDefault  = "127.0.0.1:0"
-	debugFlag = "--debug"
-	localFlag = "--local"
-	usage = `==================================================
+	debugFlag         = "--debug"
+	localFlag         = "--local"
+	usage             = `==================================================
 The Chamber of Secrets: A Distributed Diary App
 ==================================================
 Usage: go run app.go serverAddress PORT [options]
@@ -108,16 +108,16 @@ func parseArgs(args []string) (serverAddr string, clientAddr string, logstate st
 	}
 	port := 0
 	isLocal := false
-	for i, arg := range(args) {
+	for i, arg := range args {
 		// positional args
 		switch i {
 		case 0:
 			serverAddr = args[i]
-		case 1: 
-		port, err = strconv.Atoi(args[i])
-		if err != nil {
-			return serverAddr, clientAddr, logstate, fmt.Errorf("error while converting port: %s", err)
-		}
+		case 1:
+			port, err = strconv.Atoi(args[i])
+			if err != nil {
+				return serverAddr, clientAddr, logstate, fmt.Errorf("error while converting port: %s", err)
+			}
 		default:
 			// option flags
 			switch arg {

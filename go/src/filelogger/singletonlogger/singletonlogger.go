@@ -1,10 +1,10 @@
 package singletonlogger
 
 import (
-	"fmt"
+	"filelogger/level"
 	"filelogger/logger"
 	"filelogger/state"
-	"filelogger/level"
+	"fmt"
 )
 
 var singletonLogger *logger.Logger
@@ -17,7 +17,7 @@ func NewSingletonLogger(loggerName string, state state.State) (err error) {
 	singletonLogger, err = logger.NewFileLogger(loggerName, state)
 	if err != nil {
 		return fmt.Errorf("unable to create a singletonlogger: %s", err)
-	} 
+	}
 	return nil
 }
 

@@ -2,8 +2,8 @@ package util
 
 import (
 	"consensuslib"
-	"time"
 	"strconv"
+	"time"
 )
 
 const (
