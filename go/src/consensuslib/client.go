@@ -3,6 +3,7 @@ package consensuslib
 import (
 	"consensuslib/paxosnode"
 	"filelogger/singletonlogger"
+	"paxostracker"
 	"fmt"
 	"net"
 	"net/rpc"
@@ -57,6 +58,7 @@ func NewClient(clientAddr string, heartbeatRate time.Duration) (client *Client, 
 	rpc.Register(client.paxosNodeRPCWrapper)
 	go rpc.Accept(client.listener)
 
+	paxostracker.NewPaxosTracker()
 	return client, nil
 }
 
@@ -111,7 +113,9 @@ func (c *Client) Read() (value string, err error) {
 
 // TODO: Check for error
 func (c *Client) Write(value string) (err error) {
+	paxostracker.Prepare(c.listener.Addr().String())
 	_, err = c.paxosNode.WriteToPaxosNode(value)
+	fmt.Println(paxostracker.AsTable())
 	return err
 }
 

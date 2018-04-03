@@ -7,6 +7,7 @@ import (
 	"consensuslib/paxosnode/learner"
 	"consensuslib/paxosnode/proposer"
 	"filelogger/singletonlogger"
+	"paxostracker"
 	"fmt"
 	"net/rpc"
 	"time"
@@ -93,6 +94,7 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 
 	accReq := pn.Proposer.CreateAcceptRequest(value, pn.RoundNum)
 	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Accept request is id: %d , val: %s, type: %d \n", accReq.ID, accReq.Value, accReq.Type))
+	paxostracker.Propose(accReq.ID)
 	numAccepted, err = pn.DisseminateRequest(accReq)
 	if err != nil {
 		return false, err
@@ -100,9 +102,11 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Accepted %v", numAccepted))
 	// If majority is not reached, sleep for a while and try again
 	pn.ShouldRetry(numAccepted, value)
+	paxostracker.Learn(0)
 
 	// Remove all the failed neighbours at the end of a round
 	pn.ClearFailedNeighbours()
+	paxostracker.Idle(value)
 
 	return success, nil
 }

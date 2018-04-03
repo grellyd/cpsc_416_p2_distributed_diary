@@ -4,6 +4,7 @@ import (
 	"filelogger/singletonlogger"
 	"paxostracker/state"
 	"paxostracker/errors"
+	"fmt"
 )
 
 /*
@@ -20,6 +21,8 @@ type PaxosTracker struct {
 }
 
 var tracker *PaxosTracker
+var completedRounds []PaxosRound
+var currentRound *PaxosRound
 
 // NewPaxosTracker creates a new tracker
 func NewPaxosTracker() (err error) {
@@ -29,82 +32,101 @@ func NewPaxosTracker() (err error) {
 	return nil
 }
 
-// Perpare request
-func Perpare() error {
+// Prepare request
+func Prepare(callerAddr string) error {
 	if tracker == nil {
 		singletonlogger.Error("Error: PaxosTracker Uninitialised")
 		return nil
 	}
-	return tracker.transition(state.Preparing)
+	switch tracker.currentState {
+	case state.Idle:
+	default:
+		return errors.BadTransition("")
+	}
+	currentRound = &PaxosRound{
+		InitialAddr: callerAddr,
+	}
+	tracker.currentState = state.Preparing
+	return nil
 }
 
 // Propose request
-func Propose() error {
+func Propose(acceptedPrep uint64) error {
 	if tracker == nil {
 		singletonlogger.Error("Error: PaxosTracker Uninitialised")
 		return nil
 	}
-	return tracker.transition(state.Proposing)
+	switch tracker.currentState {
+	case state.Preparing:
+	default:
+		return errors.BadTransition("")
+	}
+	currentRound.AcceptedPreparation = acceptedPrep
+	tracker.currentState = state.Proposing
+	return nil
 }
 
 // Learn value
-func Learn() error {
+func Learn(acceptedProp uint64) error {
 	if tracker == nil {
 		singletonlogger.Error("Error: PaxosTracker Uninitialised")
 		return nil
 	}
-	return tracker.transition(state.Learning)
+	switch tracker.currentState {
+	case state.Proposing:
+	default:
+		return errors.BadTransition("")
+	}
+	currentRound.AcceptedProposal = acceptedProp
+	tracker.currentState = state.Learning
+	return nil
 }
 
 // Idle return
-func Idle() error {
+func Idle(finalValue string) error {
 	if tracker == nil {
 		singletonlogger.Error("Error: PaxosTracker Uninitialised")
 		return nil
 	}
-	return tracker.transition(state.Idle)
-}
-
-
-// AsTable returns the current state of the paxos process in easily consumable table form.
-func (t *PaxosTracker) AsTable() string {
-	return ""
-}
-
-// transition from the current state to another, and return error if not possible 
-func (t *PaxosTracker) transition(to state.PaxosState) error {
-	switch t.currentState {
-	case state.Idle:
-		if !to.OneOf([]state.PaxosState{state.Preparing, state.Promised}) {
-			return errors.BadTransition("")
-		}
-		return nil
-	case state.Preparing:
-		if !to.OneOf([]state.PaxosState{state.Proposing}) {
-			return errors.BadTransition("")
-		}
-		return nil
-	case state.Proposing:
-		if !to.OneOf([]state.PaxosState{state.Learning}) {
-			return errors.BadTransition("")
-		}
-		return nil
+	// check for valid transitions
+	switch tracker.currentState {
 	case state.Learning:
-		if !to.OneOf([]state.PaxosState{state.Idle}) {
-			return errors.BadTransition("")
-		}
-		return nil
-	case state.Promised:
-		if !to.OneOf([]state.PaxosState{state.Accepted}) {
-			return errors.BadTransition("")
-		}
-		return nil
 	case state.Accepted:
-		if !to.OneOf([]state.PaxosState{state.Idle}) {
-			return errors.BadTransition("")
-		}
-		return nil
 	default:
-		return errors.UnknownTransition("")
+		return errors.BadTransition("")
 	}
+	currentRound.Value = finalValue
+	tracker.currentState = state.Idle
+	// save the completed round
+	completedRounds = append(completedRounds, *currentRound)
+	// reset current round
+	currentRound = nil
+	return nil
+}
+
+// Error transition
+func Error(reason string) error {
+	if tracker == nil {
+		singletonlogger.Error("Error: PaxosTracker Uninitialised")
+		return nil
+	}
+	// valid for all transitions
+	currentRound.ErrorReason = reason
+	tracker.currentState = state.Idle
+	// save the completed round
+	completedRounds = append(completedRounds, *currentRound)
+	// reset current round
+	currentRound = nil
+	return nil
+}
+
+
+
+// AsTable returns the current state of the paxos process in human consumable table form.
+func AsTable() string {
+	rows := "| Initial Addr | AcceptedPrepare | AcceptedProposal | Value |\n"
+	for _, round := range(completedRounds) {
+		rows += round.AsRow()
+	}
+	return fmt.Sprintf("\n======================\nCurrent State: %v\n======================\n%v", tracker.currentState, rows)
 }
