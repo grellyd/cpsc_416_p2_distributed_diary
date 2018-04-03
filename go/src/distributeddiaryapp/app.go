@@ -87,12 +87,15 @@ func serveCli(client *consensuslib.Client) {
 					value += s
 				}
 			}
-			err := client.Write(value)
-			checkError(err)
+			go client.Write(value)
 		case cli.PAUSE:
-			singletonlogger.Info("Command not available yet")
+			data := *command.Data
+			fmt.Println(data)
+			singletonlogger.Info("Pausing next " + data[0])
+			go paxostracker.PauseNextIdle()
 		case cli.CONTINUE:
-			singletonlogger.Info("Command not available yet")
+			singletonlogger.Info("Continuing...")
+			go paxostracker.Continue()
 		case cli.ROUNDS:
 			singletonlogger.Info(paxostracker.AsTable())
 		default:
@@ -140,11 +143,11 @@ func parseArgs(args []string) (serverAddr string, localAddr string, outboundAddr
 		localAddr = "127.0.0.1" + addrEnd
 		outboundAddr = "127.0.0.1" + addrEnd
 	} else {
-		outboundIp, err := networking.GetOutboundIP()
+		outboundIP, err := networking.GetOutboundIP()
 		if err != nil {
 			return serverAddr, localAddr, outboundAddr, logstate, fmt.Errorf("error while fetching ip: %s", err)
 		}
-		outboundAddr = outboundIp + addrEnd
+		outboundAddr = outboundIP + addrEnd
 		localAddr = addrEnd
 
 	}

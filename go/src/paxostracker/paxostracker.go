@@ -20,17 +20,25 @@ type PaxosTracker struct {
 	currentState state.PaxosState
 }
 
+// global vars
 var tracker *PaxosTracker
 var completedRounds []PaxosRound
 var currentRound *PaxosRound
+
+// signal channels
+var idlePause chan struct{}
+var continuePaxos chan struct{}
 
 // NewPaxosTracker creates a new tracker
 func NewPaxosTracker() (err error) {
 	tracker = &PaxosTracker{
 			currentState: state.Idle,
 	}
+	idlePause = make(chan struct{}) 
+	continuePaxos = make(chan struct{})
 	return nil
 }
+
 
 // Prepare request
 func Prepare(callerAddr string) error {
@@ -88,6 +96,14 @@ func Idle(finalValue string) error {
 		singletonlogger.Error("Error: PaxosTracker Uninitialised")
 		return nil
 	}
+
+	
+	select {
+	case <- idlePause:
+		<- continuePaxos
+	default:
+	}
+
 	// check for valid transitions
 	switch tracker.currentState {
 	case state.Learning:
@@ -120,7 +136,32 @@ func Error(reason string) error {
 	return nil
 }
 
+// PauseNextPrepare will block on the next prepare call till continue
+func PauseNextPrepare() error {
+	return nil
+}
 
+// PauseNextPropose will block on the next propose call till continue
+func PauseNextPropose() error {
+	return nil
+}
+
+// PauseNextLearn will block on the next learn call till continue
+func PauseNextLearn() error {
+	return nil
+}
+
+// PauseNextIdle will block on the next idle call till continue
+func PauseNextIdle() error {
+	idlePause <- struct{}{}
+	return nil
+}
+
+// Continue the execution of paxos
+func Continue() error {
+	continuePaxos <- struct{}{}
+	return nil
+}
 
 // AsTable returns the current state of the paxos process in human consumable table form.
 func AsTable() string {

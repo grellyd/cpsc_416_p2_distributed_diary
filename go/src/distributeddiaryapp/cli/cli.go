@@ -83,7 +83,7 @@ func Run() (cmd Command) {
 				writeArgs := strings.Split(command[0], " ")[1:]
 				return Command{WRITE, &writeArgs}
 			case 'p':
-				when := strings.Split(command[0], "")[1:]
+				when := strings.Split(command[0], " ")[1:]
 				return Command{PAUSE, &when}
 			default:
 				switch command[0] {
