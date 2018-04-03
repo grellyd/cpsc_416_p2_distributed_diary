@@ -41,7 +41,7 @@ func NewClient(clientAddr string, heartbeatRate time.Duration) (client *Client, 
 		return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: Unable to listen to IP address '%s': %s", addr, err)
 	}
 	client.localAddr = client.listener.Addr().String()
-	fmt.Println("[LIB/CLIENT]#NewClient: Listening on IP address", client.localAddr)
+	singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#NewClient: Listening on IP address%v", client.localAddr))
 
 	// create the paxosnode
 	client.paxosNode, err = paxosnode.NewPaxosNode(client.localAddr)
@@ -79,7 +79,7 @@ func (c *Client) Connect(serverAddr string) (err error) {
 		if err != nil {
 			return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to connect to neighbors: %s", err)
 		}
-		fmt.Println("[LIB/CLIENT]#Connect: Learning the latest value from neighbours")
+		singletonlogger.Debug("[LIB/CLIENT]#Connect: Learning the latest value from neighbours")
 		err = c.paxosNode.LearnLatestValueFromNeighbours()
 		log := c.paxosNode.Learner.Log
 		if len(log) != 0 {
