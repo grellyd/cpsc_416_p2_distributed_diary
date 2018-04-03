@@ -16,6 +16,7 @@ type PaxosNodeRPCWrapper = paxosnode.PaxosNodeRPCWrapper
 // Client in the consensuslib
 type Client struct {
 	localAddr     string
+	outboundAddr  string
 	heartbeatRate time.Duration
 
 	listener        net.Listener
@@ -27,12 +28,12 @@ type Client struct {
 }
 
 // NewClient creates a new Client, ready to connect
-func NewClient(clientAddr string, heartbeatRate time.Duration) (client *Client, err error) {
+func NewClient(localAddr string, outboundAddr string, heartbeatRate time.Duration) (client *Client, err error) {
 	client = &Client{
 		heartbeatRate: heartbeatRate,
 	}
 
-	addr, err := net.ResolveTCPAddr("tcp", clientAddr)
+	addr, err := net.ResolveTCPAddr("tcp", localAddr)
 	if err != nil {
 		return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: unable to resolve client addr: %s", err)
 	}
@@ -42,10 +43,12 @@ func NewClient(clientAddr string, heartbeatRate time.Duration) (client *Client, 
 		return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: Unable to listen to IP address '%s': %s", addr, err)
 	}
 	client.localAddr = client.listener.Addr().String()
-	singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#NewClient: Listening on IP address%v", client.localAddr))
+	client.outboundAddr = outboundAddr
+	singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#NewClient: Listening on IP address %v", client.localAddr))
+	singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#NewClient: Outbound IP address is %v", client.outboundAddr))
 
 	// create the paxosnode
-	client.paxosNode, err = paxosnode.NewPaxosNode(client.localAddr)
+	client.paxosNode, err = paxosnode.NewPaxosNode(client.outboundAddr)
 	if err != nil {
 		return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: Unable to create a paxos node: %s", err)
 	}
@@ -69,7 +72,7 @@ func (c *Client) Connect(serverAddr string) (err error) {
 		return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to connect to server: %s", err)
 	}
 	singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#Connect: Registering to server at: %s\n", serverAddr))
-	err = c.serverRPCClient.Call("Server.Register", c.localAddr, &c.neighbors)
+	err = c.serverRPCClient.Call("Server.Register", c.outboundAddr, &c.neighbors)
 	if err != nil {
 		return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to register with server: %s", err)
 	}
@@ -121,7 +124,7 @@ func (c *Client) Write(value string) (err error) {
 // IsAlive checks if the server is alive
 func (c *Client) IsAlive() (alive bool, err error) {
 	// alive is default false
-	err = c.serverRPCClient.Call("Server.CheckAlive", c.localAddr, &alive)
+	err = c.serverRPCClient.Call("Server.CheckAlive", c.outboundAddr, &alive)
 	return alive, err
 }
 
@@ -132,7 +135,7 @@ func (c *Client) SendHeartbeats() (err error) {
 	for _ = range time.Tick(c.heartbeatRate) {
 		// TODO: Check ignored
 		var ignored bool
-		err = c.serverRPCClient.Call("Server.HeartBeat", c.localAddr, &ignored)
+		err = c.serverRPCClient.Call("Server.HeartBeat", c.outboundAddr, &ignored)
 		if err != nil {
 			return fmt.Errorf("[LIB/CLIENT]#SendHeartheats: Error while sending heartbeat: %s", err)
 		}

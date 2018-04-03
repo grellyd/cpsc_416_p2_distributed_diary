@@ -48,12 +48,12 @@ Valid options:
 )
 
 func main() {
-	serverAddr, localAddr, logstate, err := parseArgs(os.Args[1:])
+	serverAddr, localAddr, outboundAddr, logstate, err := parseArgs(os.Args[1:])
 	checkError(err)
 	err = singletonlogger.NewSingletonLogger("app", logstate)
 	checkError(err)
-	singletonlogger.Debug("starting application at " + localAddr)
-	client, err := consensuslib.NewClient(localAddr, 1*time.Millisecond)
+	singletonlogger.Debug("starting application at " + localAddr + " with outbound address " + outboundAddr)
+	client, err := consensuslib.NewClient(localAddr, outboundAddr, 1*time.Millisecond)
 	checkError(err)
 	singletonlogger.Debug("created client at " + localAddr)
 	err = client.Connect(serverAddr)
@@ -108,7 +108,7 @@ func Exit() {
 	os.Exit(0)
 }
 
-func parseArgs(args []string) (serverAddr string, clientAddr string, logstate state.State, err error) {
+func parseArgs(args []string) (serverAddr string, localAddr string, outboundAddr string, logstate state.State, err error) {
 	if !validArgs.MatchString(strings.Join(args, " ")) {
 		fmt.Println(usage)
 		os.Exit(1)
@@ -123,7 +123,7 @@ func parseArgs(args []string) (serverAddr string, clientAddr string, logstate st
 		case 1:
 			port, err = strconv.Atoi(args[i])
 			if err != nil {
-				return serverAddr, clientAddr, logstate, fmt.Errorf("error while converting port: %s", err)
+				return serverAddr, localAddr, outboundAddr, logstate, fmt.Errorf("error while converting port: %s", err)
 			}
 		default:
 			// option flags
@@ -137,15 +137,18 @@ func parseArgs(args []string) (serverAddr string, clientAddr string, logstate st
 	}
 	addrEnd := fmt.Sprintf(":%d", port)
 	if isLocal {
-		clientAddr = "127.0.0.1" + addrEnd
+		localAddr = "127.0.0.1" + addrEnd
+		outboundAddr = "127.0.0.1" + addrEnd
 	} else {
-		ip, err := networking.GetOutboundIP()
+		outboundIp, err := networking.GetOutboundIP()
 		if err != nil {
-			return serverAddr, clientAddr, logstate, fmt.Errorf("error while fetching ip: %s", err)
+			return serverAddr, localAddr, outboundAddr, logstate, fmt.Errorf("error while fetching ip: %s", err)
 		}
-		clientAddr = ip + addrEnd
+		outboundAddr = outboundIp + addrEnd
+		localAddr = addrEnd
+
 	}
-	return serverAddr, clientAddr, logstate, nil
+	return serverAddr, localAddr, outboundAddr, logstate, nil
 }
 
 func checkError(err error) {
