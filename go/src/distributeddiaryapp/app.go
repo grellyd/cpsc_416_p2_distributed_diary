@@ -51,7 +51,7 @@ func main() {
 	checkError(err)
 	err = singletonlogger.NewSingletonLogger("app", logstate)
 	checkError(err)
-	singletonlogger.Debug("starting application at " + localAddr)
+	singletonlogger.Debug("starting application at " + outboundAddr)
 	client, err := consensuslib.NewClient(localAddr, outboundAddr, 1*time.Millisecond)
 	checkError(err)
 	singletonlogger.Debug("created client at " + localAddr)
