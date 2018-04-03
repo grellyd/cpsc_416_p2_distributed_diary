@@ -1,6 +1,7 @@
 package proposer
 
 import (
+	"filelogger/singletonlogger"
 	"consensuslib/message"
 	"fmt"
 )
@@ -35,7 +36,7 @@ type ProposerInterface interface {
 func (proposer *ProposerRole) CreatePrepareRequest(roundNum int) Message {
 	// Increment the messageID (n value) every time a new prepare request is made
 	proposer.messageID++
-	fmt.Println("[Proposer] message ID at proposer ", proposer.messageID)
+	singletonlogger.Debug(fmt.Sprintf("[Proposer] message ID at proposer %v", proposer.messageID))
 	prepareRequest := Message{
 		ID:             proposer.messageID,
 		Type:           message.PREPARE,
@@ -62,9 +63,9 @@ func (proposer *ProposerRole) UpdateMessageID(messageID uint64) {
 }
 
 func (proposer *ProposerRole) IncrementMessageID() {
-	fmt.Println("[Proposer] increasing message ID before ", proposer.messageID)
+	singletonlogger.Debug(fmt.Sprintf("[Proposer] increasing message ID before %v", proposer.messageID))
 	proposer.messageID++
-	fmt.Println("[Proposer] increasing message ID after ", proposer.messageID)
+	singletonlogger.Debug(fmt.Sprintf("[Proposer] increasing message ID after %v", proposer.messageID))
 }
 
 // The constructor for a new ProposerRole object instance. A PN should only interact with just one

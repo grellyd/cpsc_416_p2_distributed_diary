@@ -6,6 +6,7 @@ import (
 	"consensuslib/paxosnode/acceptor"
 	"consensuslib/paxosnode/learner"
 	"consensuslib/paxosnode/proposer"
+	"filelogger/singletonlogger"
 	"fmt"
 	"net/rpc"
 	"time"
@@ -48,8 +49,8 @@ func NewPaxosNode(pnAddr string) (pn *PaxosNode, err error) {
 	//portNumber := portRegex.FindString(pn.Addr)
 	//acceptor.RestoreFromBackup(portNumber[1:])
 	acceptor.RestoreFromBackup()
-	fmt.Println("[paxosnode] after backup restoration promised value is ", acceptor.LastPromised)
-	fmt.Println("[paxosnode] after backup restoration accepted value is ", acceptor.LastAccepted)
+	singletonlogger.Debug(fmt.Sprintf("[paxosnode] after backup restoration promised value is %v", acceptor.LastPromised))
+	singletonlogger.Debug(fmt.Sprintf("[paxosnode] after backup restoration accepted value is %v", acceptor.LastAccepted))
 	return pn, err
 }
 
@@ -76,11 +77,11 @@ func (pn *PaxosNode) UnmountPaxosNode() (err error) {
 
 // Handles the entire process of proposing a value and trying to achieve consensus
 func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
-	fmt.Println("[paxosnode] Writing to paxos ", value)
+	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Writing to paxos %v", value))
 	prepReq := pn.Proposer.CreatePrepareRequest(pn.RoundNum)
-	fmt.Printf("[paxosnode] Prepare request is id: %d , val: %s, type: %d, round: %d \n", prepReq.ID, prepReq.Value, prepReq.Type, prepReq.RoundNum)
+	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Prepare request is id: %d , val: %s, type: %d, round: %d \n", prepReq.ID, prepReq.Value, prepReq.Type, prepReq.RoundNum))
 	numAccepted, err := pn.DisseminateRequest(prepReq)
-	fmt.Println("[paxosnode] Pledged to accept ", numAccepted)
+	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Pledged to accept %v", numAccepted))
 	// TODO: Unsure if err from DisseminateRequest should bubble up to client. Previous Note: should return new value?
 	if err != nil {
 		return false, err
@@ -91,12 +92,12 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	pn.ShouldRetry(numAccepted, value)
 
 	accReq := pn.Proposer.CreateAcceptRequest(value, pn.RoundNum)
-	fmt.Printf("[paxosnode] Accept request is id: %d , val: %s, type: %d \n", accReq.ID, accReq.Value, accReq.Type)
+	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Accept request is id: %d , val: %s, type: %d \n", accReq.ID, accReq.Value, accReq.Type))
 	numAccepted, err = pn.DisseminateRequest(accReq)
 	if err != nil {
 		return false, err
 	}
-	fmt.Println("[paxosnode] Accepted ", numAccepted)
+	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Accepted %v", numAccepted))
 	// If majority is not reached, sleep for a while and try again
 	pn.ShouldRetry(numAccepted, value)
 
@@ -112,7 +113,7 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 	for _, ip := range ips {
 		neighbourConn, err := rpc.Dial("tcp", ip)
 		if err != nil {
-			fmt.Println("[paxosnode]: Error in BecomeNeighbours")
+			singletonlogger.Debug("[paxosnode]: Error in BecomeNeighbours")
 			return errors.NeighbourConnectionError(ip)
 		}
 		connected := false
@@ -120,16 +121,16 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 		// Add ip to connectedNbrs and add the connection to Neighbours map
 		// after bidirectional RPC connection establishment is successful
 		if connected {
-			fmt.Println("[paxosnode]: connected to the nbr")
+			singletonlogger.Debug("[paxosnode]: connected to the nbr")
 			pn.NbrAddrs = append(pn.NbrAddrs, ip)
 			if pn.Neighbours == nil {
 				pn.Neighbours = make(map[string]*rpc.Client, 0)
 			}
 			pn.Neighbours[ip] = neighbourConn
 		}
-		/*fmt.Println("[paxosnode] after I connected to PaxosNW length", len(pn.Neighbours), " and ngbours ")
+		/*singletonlogger.Debug("[paxosnode] after I connected to PaxosNW length", len(pn.Neighbours), " and ngbours ")
 		for k, v := range pn.Neighbours {
-			fmt.Println(k, "and rpc ", v )
+			singletonlogger.Debug(k, "and rpc ", v )
 		}*/
 	}
 	return nil
@@ -138,13 +139,13 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 // When a new node joins the network, it contacts all of its neighbours for their logs.
 // The new node will then set its initial log to be the longest log received from neighbours
 func (pn *PaxosNode) SetInitialLog() (err error) {
-	fmt.Println("[paxosnode] Setting the initial log for this new node")
+	singletonlogger.Debug("[paxosnode] Setting the initial log for this new node")
 	maxLen := 0
 	longestLog := make([]Message, 0)
 	for k, v := range pn.Neighbours {
 		// Create a temporary log to get filled by neighbour learners
 		temp := make([]Message, 0)
-		fmt.Printf("[paxosnode] Making ReadFromLearner call to node %v\n", v)
+		singletonlogger.Debug(fmt.Sprintf("[paxosnode] Making ReadFromLearner call to node %v\n", v))
 		e := v.Call("PaxosNodeRPCWrapper.ReadFromLearner", "placeholder", &temp)
 		if e != nil {
 			pn.RemoveFailedNeighbour(k)
@@ -181,7 +182,7 @@ func (pn *PaxosNode) GetLog() (log []Message, err error) {
 func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err error) {
 	neighbourConn, err := rpc.Dial("tcp", addr)
 	if err != nil {
-		fmt.Println("[paxosnode] Error in AcceptNeighbourConnection")
+		singletonlogger.Debug("[paxosnode] Error in AcceptNeighbourConnection")
 		return errors.NeighbourConnectionError(addr)
 	}
 	pn.NbrAddrs = append(pn.NbrAddrs, addr)
@@ -190,23 +191,23 @@ func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err e
 	}
 	pn.Neighbours[addr] = neighbourConn
 
-	fmt.Println("[paxosnode] after neigh connection we have length", len(pn.Neighbours), " and ngbours ")
-	for k, _ := range pn.Neighbours {
-		fmt.Println(k)
+	neighbors := ""
+	for _, n := range pn.Neighbours {
+		neighbors += fmt.Sprintf("%v ", n)
 	}
-
+	singletonlogger.Debug(fmt.Sprintf("[paxosnode] after neigh connection we have length '%v' and neighbours %v", len(pn.Neighbours), neighbors))
 	*result = true
 	return nil
 }
 
 // Disseminates a message to all neighbours. This includes prepare and accept requests.
 func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err error) {
-	fmt.Println("[paxosnode] Disseminate request ", prepReq.Type)
+	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Disseminate request %v", prepReq.Type))
 	numAccepted = 0
 	respReq := prepReq
 	switch prepReq.Type {
 	case message.PREPARE:
-		fmt.Println("[paxosnode] PREPARE")
+		singletonlogger.Debug("[paxosnode] PREPARE")
 
 		// Set up timer and channel for responses
 		//timer := time.NewTimer(time.Minute)
@@ -226,31 +227,31 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		resp := pn.Acceptor.ProcessPrepare(prepReq, pn.RoundNum)
 		if resp.Equals(&prepReq) {
 			numAccepted++
-			fmt.Println("[paxosnode] I accepted and the # is ", numAccepted)
+			singletonlogger.Debug(fmt.Sprintf("[paxosnode] I accepted and the # is %v", numAccepted))
 		}
 
 
 		for k, v := range pn.Neighbours {
 
-			fmt.Println("[paxosnode] disseminating to neighbour ", k)
+			singletonlogger.Debug(fmt.Sprintf("[paxosnode] disseminating to neighbour %v", k))
 
 			go func(v *rpc.Client, k string) {
 				var respReq Message
-				fmt.Println("[paxosnode] disseminating to neighbour inside ", k, "and RPC ", v)
+				singletonlogger.Debug(fmt.Sprintf("[paxosnode] disseminating to neighbour inside %v and RPC %v", k, v))
 				errQueue <- v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
 				c<-respReq
 			}(v, k)
 			select {
 			case err := <- errQueue:
-				fmt.Println("[paxosnode] channel worked on PREPARE")
+				singletonlogger.Debug("[paxosnode] channel worked on PREPARE")
 				if err != nil {
 					pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 					if len(errQueue) >= len(pn.Neighbours)/2 {
-						fmt.Println("[paxosnode] checking errQueue ", len(errQueue))
+						singletonlogger.Debug(fmt.Sprintf("[paxosnode] checking errQueue %v", len(errQueue)))
 						pn.RoundNum++
 						return numAccepted, nil
 					}
-					fmt.Println("[paxosnode] on PREPARE RPC failed ", k)
+					singletonlogger.Debug(fmt.Sprintf("[paxosnode] on PREPARE RPC failed %v", k))
 				} else {
 					req := <- c
 					if prepReq.Equals(&req) {
@@ -269,7 +270,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		return numAccepted, nil
 
 	case message.ACCEPT:
-		fmt.Println("[paxosnode] ACCEPT")
+		singletonlogger.Debug("[paxosnode] ACCEPT")
 		nghbrNum := len(pn.Neighbours)
 		c := make(chan Message, nghbrNum)
 		errQueue := make(chan error, nghbrNum)
@@ -279,22 +280,22 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		for k, v := range pn.Neighbours {
 
 			go func(k string, v *rpc.Client) {
-				fmt.Println("[paxosnode] disseminating ACCEPT to neighbour ", k)
+				singletonlogger.Debug(fmt.Sprintf("[paxosnode] disseminating ACCEPT to neighbour %v", k))
 				errQueue <- v.Call("PaxosNodeRPCWrapper.ProcessAcceptRequest", prepReq, &respReq)
 				c<-respReq
 
 			}(k, v)
 			select {
 			case err := <- errQueue:
-				fmt.Println("[paxosnode] channel worked on PREPARE")
+				singletonlogger.Debug("[paxosnode] channel worked on PREPARE")
 				if err != nil {
 					pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 					if len(errQueue) >= len(pn.Neighbours)/2 {
-						fmt.Println("[paxosnode] checking errQueue ", len(errQueue))
+						singletonlogger.Debug(fmt.Sprintf("[paxosnode] checking errQueue %v", len(errQueue)))
 						pn.RoundNum++
 						return numAccepted, nil
 					}
-					fmt.Println("[paxosnode] on PREPARE RPC failed ", k)
+					singletonlogger.Debug(fmt.Sprintf("[paxosnode] on PREPARE RPC failed %v", k))
 				} else {
 					req := <- c
 					if prepReq.Equals(&req) {
@@ -312,7 +313,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		resp := pn.Acceptor.ProcessAccept(prepReq, pn.RoundNum)
 		if resp.Equals(&prepReq) {
 			numAccepted++
-			fmt.Println("[paxosnode] I accepted and the # is ", numAccepted)
+			singletonlogger.Debug(fmt.Sprintf("[paxosnode] I accepted and the # is %v", numAccepted))
 			go pn.SayAccepted(&prepReq)
 		}
 
@@ -321,7 +322,6 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 	default:
 		return -1, errors.InvalidMessageTypeError(prepReq)
 	}
-
 	return numAccepted, err
 }
 
@@ -350,9 +350,9 @@ func (pn *PaxosNode) IsMajority(n int) bool {
 // and notifies learner when the # for this particular message is a majority to write into the log
 // TODO: think about moving this responsibility to the learner
 func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
-	//fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, round # ", pn.RoundNum)
+	//singletonlogger.Debug("[paxosnode] in CountForNumAlreadyAccepted, round # ", pn.RoundNum)
 	numSeen := pn.Learner.NumAlreadyAccepted(m)
-	//fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, how many accepted ", numSeen)
+	//singletonlogger.Debug("[paxosnode] in CountForNumAlreadyAccepted, how many accepted ", numSeen)
 	if pn.IsMajority(numSeen) {
 		// TODO: Learner.LearnValue returns the next round #; use the new round # somewhere?
 		if !pn.IsInLog(m) {
@@ -360,7 +360,7 @@ func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
 			pn.RoundNum++
 		}
 	}
-	fmt.Println("[paxosnode] in CountForNumAlreadyAccepted, value learned, next round # ", pn.RoundNum)
+	singletonlogger.Debug(fmt.Sprintf("[paxosnode] in CountForNumAlreadyAccepte%vd, value learned, next round # ", pn.RoundNum))
 }
 
 func (pn *PaxosNode) ShouldRetry(numAccepted int, value string) {

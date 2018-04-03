@@ -1,4 +1,5 @@
 package consensuslib
+
 import (
 	"consensuslib/paxosnode"
 	"filelogger/singletonlogger"
@@ -30,25 +31,6 @@ func NewClient(clientAddr string, heartbeatRate time.Duration) (client *Client, 
 		heartbeatRate: heartbeatRate,
 	}
 
-	/*
-	addr := &net.TCPAddr{}
-	if isLocal {
-		localAddr := fmt.Sprintf("127.0.0.1:%d", port)
-		addr, err = net.ResolveTCPAddr("tcp", localAddr)
-		if err != nil {
-			return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: Unable to resolve local address '%s': %s", localAddr, err)
-		}
-	} else {
-		publicAddr, err := networking.GetOutboundIP()
-		if err != nil {
-			return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: Outbound IP couldn't be fetched")
-		}
-		addr, err = net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", publicAddr, port))
-		if err != nil {
-			return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: Unable to resolve a public address: %s", err)
-		}
-	}
-	*/
 	addr, err := net.ResolveTCPAddr("tcp", clientAddr)
 	if err != nil {
 		return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: unable to resolve client addr: %s", err)

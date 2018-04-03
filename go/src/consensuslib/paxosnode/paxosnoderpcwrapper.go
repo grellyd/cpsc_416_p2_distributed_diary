@@ -1,6 +1,7 @@
 package paxosnode
 
 import (
+	"filelogger/singletonlogger"
 	"consensuslib/message"
 	"fmt"
 )
@@ -20,7 +21,7 @@ func NewPaxosNodeRPCWrapper(paxosNode *PaxosNode) (wrapper *PaxosNodeRPCWrapper,
 
 // RPCs for paxosnodes start here
 func (p *PaxosNodeRPCWrapper) ProcessPrepareRequest(m Message, r *Message) (err error) {
-	fmt.Println("[paxosnodewrapper] increasing message ID")
+	singletonlogger.Debug("[paxosnodewrapper] increasing message ID")
 	p.paxosNode.Proposer.IncrementMessageID()
 	*r = p.paxosNode.Acceptor.ProcessPrepare(m, p.paxosNode.RoundNum)
 	return nil
@@ -29,10 +30,10 @@ func (p *PaxosNodeRPCWrapper) ProcessPrepareRequest(m Message, r *Message) (err 
 // RPC call received from other node to process accept request
 // If the request accepted, it gets disseminated to all the Learners in the Paxos NW
 func (p *PaxosNodeRPCWrapper) ProcessAcceptRequest(m Message, r *Message) (err error) {
-	fmt.Println("[paxosnodewrapper] RPC processing accept request")
+	singletonlogger.Debug("[paxosnodewrapper] RPC processing accept request")
 	*r = p.paxosNode.Acceptor.ProcessAccept(m, p.paxosNode.RoundNum)
 	if m.Equals(r) {
-		fmt.Println("[paxosnodewrapper] saying accepted")
+		singletonlogger.Debug("[paxosnodewrapper] saying accepted")
 		go p.paxosNode.SayAccepted(r)
 	}
 	return nil
@@ -47,15 +48,15 @@ func (p *PaxosNodeRPCWrapper) ProcessAcceptRequest(m Message, r *Message) (err e
 
 // RPC call which is called by node that tries to connect
 func (p *PaxosNodeRPCWrapper) ConnectRemoteNeighbour(addr string, r *bool) (err error) {
-	//fmt.Println("[paxoswrapper] connecting my remote neighbour")
+	//singletonlogger.Debug("[paxoswrapper] connecting my remote neighbour")
 	err = p.paxosNode.AcceptNeighbourConnection(addr, r)
-	//fmt.Println("[paxoswrapper] error on connection? ", *r)
+	//singletonlogger.Debug("[paxoswrapper] error on connection? ", *r)
 	return err
 }
 
 // RPC call from other node's Acceptor about value it accepted
 func (p *PaxosNodeRPCWrapper) NotifyAboutAccepted(m *Message, r *bool) (err error) {
-	fmt.Println("[paxosnodewrapper] notify about accepted ", m.Type)
+	singletonlogger.Debug(fmt.Sprintf("[paxosnodewrapper] notify about accepted %v", m.Type))
 	p.paxosNode.CountForNumAlreadyAccepted(m)
 	return err
 }

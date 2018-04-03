@@ -1,6 +1,7 @@
 package acceptor
 
 import (
+	"filelogger/singletonlogger"
 	"consensuslib/message"
 	"encoding/json"
 	"fmt"
@@ -27,7 +28,7 @@ func NewAcceptor() AcceptorRole {
 		Message{},
 		Message{},
 	}
-	fmt.Println("[Acceptor] ", acc.ID)
+	singletonlogger.Debug(fmt.Sprintf("[Acceptor] %v", acc.ID))
 	return acc
 }
 
@@ -46,7 +47,7 @@ type AcceptorInterface interface {
 }
 
 func (acceptor *AcceptorRole) ProcessPrepare(msg Message, roundNum int) Message {
-	fmt.Println("[Acceptor] process prepare for round ", roundNum)
+	singletonlogger.Debug(fmt.Sprintf("[Acceptor] process prepare for round %v", roundNum))
 	// no any value had been proposed or n'>n
 	// then n' == n and ID' == ID (basically same proposer distributed proposal twice)
 	if &acceptor.LastPromised == nil ||
@@ -57,13 +58,13 @@ func (acceptor *AcceptorRole) ProcessPrepare(msg Message, roundNum int) Message 
 			acceptor.LastPromised.RoundNum == roundNum {
 		acceptor.LastPromised = msg
 	}
-	fmt.Printf("[Acceptor] promised id: %d, val: %s, round: %d \n", acceptor.LastPromised.ID, acceptor.LastPromised.Value, roundNum)
+	singletonlogger.Debug(fmt.Sprintf("[Acceptor] promised id: %d, val: %s, round: %d \n", acceptor.LastPromised.ID, acceptor.LastPromised.Value, roundNum))
 	acceptor.saveIntoFile(acceptor.LastPromised)
 	return acceptor.LastPromised
 }
 
 func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
-	fmt.Println("[Acceptor] process accept")
+	singletonlogger.Debug("[Acceptor] process accept")
 	if &acceptor.LastAccepted == nil {
 		if msg.ID == acceptor.LastPromised.ID &&
 			msg.FromProposerID == acceptor.LastPromised.FromProposerID {
@@ -82,7 +83,7 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 			acceptor.LastAccepted = msg
 		}
 	}
-	fmt.Printf("[Acceptor] accepted id: %d, val: %s, round: %d \n", acceptor.LastAccepted.ID, acceptor.LastAccepted.Value, roundNum)
+	singletonlogger.Debug(fmt.Sprintf("[Acceptor] accepted id: %d, val: %s, round: %d \n", acceptor.LastAccepted.ID, acceptor.LastAccepted.Value, roundNum))
 	acceptor.saveIntoFile(acceptor.LastAccepted)
 	return acceptor.LastAccepted
 
@@ -92,29 +93,29 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 // TODO: in the last version this method will have nothing, because we'll be running
 // code on different machines
 func (acceptor *AcceptorRole) RestoreFromBackup() {
-	fmt.Println("[Acceptor] restoring from backup")
+	singletonlogger.Debug("[Acceptor] restoring from backup")
 	path := "temp1/"+acceptor.ID + "prepare.json"
 	f, err := os.Open(path)
 	if err != nil {
-		fmt.Println("[Acceptor] no such file exist, no messages were promised ", err)
+		singletonlogger.Debug(fmt.Sprintf("[Acceptor] no such file exist, no messages were promised %v", err))
 		return
 	}
 	buf, err := ioutil.ReadAll(f)
 	err = json.Unmarshal(buf, &acceptor.LastPromised)
 	if err != nil {
-		fmt.Println("[Acceptor] error on unmarshalling promise ", err)
+		singletonlogger.Debug(fmt.Sprintf("[Acceptor] error on unmarshalling promise %v", err))
 	}
 	f.Close()
 	path = "temp1/"+acceptor.ID + "accept.json"
 	f, err = os.Open(path)
 	if err != nil {
-		fmt.Println("[Acceptor] no such file exist, no messages were accepted ", err)
+		singletonlogger.Debug(fmt.Sprintf("[Acceptor] no such file exist, no messages were accepted %v", err))
 		return
 	}
 	buf, err = ioutil.ReadAll(f)
 	err = json.Unmarshal(buf, &acceptor.LastAccepted)
 	if err != nil {
-		fmt.Println("[Acceptor] error on unmarshalling accept ", err)
+		singletonlogger.Debug(fmt.Sprintf("[Acceptor] error on unmarshalling accept %v", err))
 	}
 }
 
@@ -122,47 +123,47 @@ func (acceptor *AcceptorRole) RestoreFromBackup() {
 func (a *AcceptorRole)saveIntoFile(msg Message) (err error) {
 	/*addr, errn := net.ResolveTCPAddr("tcp", msg.FromProposerID)
 	if errn != nil {
-		fmt.Println("[Acceptor] can't resolve own address")
+		singletonlogger.Debug("[Acceptor] can't resolve own address")
 	}*/
-	fmt.Println("[Acceptor] saving message into file")
+	singletonlogger.Debug("[Acceptor] saving message into file")
 	var path string
 	msgJson, err := json.Marshal(msg)
 	if err != nil {
-		fmt.Println("[Acceptor] errored on marshalling")
+		singletonlogger.Debug("[Acceptor] errored on marshalling")
 		return err
 	}
 	var f *os.File
 	switch msg.Type {
 	case message.PREPARE:
 		path = "temp1/"+ a.ID + "prepare.json"
-		fmt.Println("[Acceptor] saved PREPARE to file")
+		singletonlogger.Debug("[Acceptor] saved PREPARE to file")
 	case message.ACCEPT:
 		path = "temp1/"+ a.ID + "accept.json"
-		fmt.Println("[Acceptor] saved ACCEPT to file")
+		singletonlogger.Debug("[Acceptor] saved ACCEPT to file")
 	}
 	if err != nil {
-		fmt.Println("[Acceptor] errored on reading path ", err)
+		singletonlogger.Debug(fmt.Sprintf("[Acceptor] errored on reading path %v", err))
 	}
 	if _, erro := os.Stat(path); os.IsNotExist(erro) {
 		os.MkdirAll("temp1/", os.ModePerm);
 		f, err = os.Create(path)
 		if err != nil {
-			fmt.Println("[Acceptor] errored on creating file ", err)
+			singletonlogger.Debug(fmt.Sprintf("[Acceptor] errored on creating file %v", err))
 		}
 
 	} else {
 		f, err = os.OpenFile(path, os.O_RDWR, 0644)
 		if err != nil {
-			fmt.Println("[Acceptor] errored on opening file ", err)
+			singletonlogger.Debug(fmt.Sprintf("[Acceptor] errored on opening file %v", err))
 		}
 	}
 	//defer f.Close()
 	_, err = f.Write(msgJson)
 	if err != nil {
-		fmt.Println("[Acceptor] errored on writing into file ", err)
+		singletonlogger.Debug(fmt.Sprintf("[Acceptor] errored on writing into file %v", err))
 	}
 	f.Close()
-	//fmt.Println("[Acceptor] saved message into file")
+	//singletonlogger.Debug("[Acceptor] saved message into file")
 	return err
 }
 
