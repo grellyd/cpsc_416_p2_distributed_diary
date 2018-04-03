@@ -44,6 +44,7 @@ func NewClient(localAddr string, outboundAddr string, heartbeatRate time.Duratio
 	client.localAddr = client.listener.Addr().String()
 	client.outboundAddr = outboundAddr
 	singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#NewClient: Listening on IP address %v", client.localAddr))
+	singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#NewClient: Outbound IP address is %v", client.outboundAddr))
 
 	// create the paxosnode
 	client.paxosNode, err = paxosnode.NewPaxosNode(client.outboundAddr)
@@ -120,7 +121,7 @@ func (c *Client) Write(value string) (err error) {
 // IsAlive checks if the server is alive
 func (c *Client) IsAlive() (alive bool, err error) {
 	// alive is default false
-	err = c.serverRPCClient.Call("Server.CheckAlive", c.localAddr, &alive)
+	err = c.serverRPCClient.Call("Server.CheckAlive", c.outboundAddr, &alive)
 	return alive, err
 }
 
@@ -131,7 +132,7 @@ func (c *Client) SendHeartbeats() (err error) {
 	for _ = range time.Tick(c.heartbeatRate) {
 		// TODO: Check ignored
 		var ignored bool
-		err = c.serverRPCClient.Call("Server.HeartBeat", c.localAddr, &ignored)
+		err = c.serverRPCClient.Call("Server.HeartBeat", c.outboundAddr, &ignored)
 		if err != nil {
 			return fmt.Errorf("[LIB/CLIENT]#SendHeartheats: Error while sending heartbeat: %s", err)
 		}
