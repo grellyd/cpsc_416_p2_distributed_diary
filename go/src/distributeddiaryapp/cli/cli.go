@@ -14,6 +14,9 @@ const (
 	READ  = "read"
 	WRITE = "write"
 	HELP  = "help"
+	ROUNDS = "rounds"
+	PAUSE = "pause"
+	CONTINUE = "continue"
 )
 
 type Command struct {
@@ -21,7 +24,7 @@ type Command struct {
 	Data    *[]string
 }
 
-var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit)")
+var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit|rounds|pause (prepare|propose|learn|idle)|continue)")
 
 var helpString = `
 ===========================================
@@ -49,6 +52,17 @@ write [a-zA-Z0-9 ]?
 -------------------
 - write to the log a string consisiting of one or more lower and upper case letters, 0-9, and spaces.
 
+rounds
+-------
+- produce the round results from the paxostracker
+
+pause [prepare|propose|learn|idle]
+----------------------------------
+- pause the client's execution at the selected stage for the next round until 'continue' is called
+
+continue
+--------
+- continue the round
 
 Created for:
 CPSC 416 Distributed Systems, in the 2017W2 Session at the University of British Columbia (UBC)
@@ -63,11 +77,15 @@ func Run() (cmd Command) {
 		inputString := readFromStdin(reader)
 		command := validCommand.FindStringSubmatch(inputString)
 		if command != nil && len(command) > 0 {
-			if command[0][0] == 'w' {
+			switch command[0][0] {
+			case 'w':
 				// split string for written string
 				writeArgs := strings.Split(command[0], " ")[1:]
 				return Command{WRITE, &writeArgs}
-			} else {
+			case 'p':
+				when := strings.Split(command[0], "")[1:]
+				return Command{PAUSE, &when}
+			default:
 				switch command[0] {
 				case ALIVE:
 					return Command{ALIVE, nil}
@@ -77,6 +95,10 @@ func Run() (cmd Command) {
 					return Command{EXIT, nil}
 				case HELP:
 					fmt.Println(helpString)
+				case ROUNDS:
+					return Command{ROUNDS, nil}
+				case CONTINUE:
+					return Command{CONTINUE, nil}
 				}
 			}
 		} else {

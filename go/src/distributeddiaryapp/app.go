@@ -13,6 +13,7 @@ package main
 
 import (
 	"consensuslib"
+	"paxostracker"
 	"distributeddiaryapp/cli"
 	"distributeddiaryapp/networking"
 	"filelogger/singletonlogger"
@@ -88,6 +89,12 @@ func serveCli(client *consensuslib.Client) {
 			}
 			err := client.Write(value)
 			checkError(err)
+		case cli.PAUSE:
+			singletonlogger.Info("Command not available yet")
+		case cli.CONTINUE:
+			singletonlogger.Info("Command not available yet")
+		case cli.ROUNDS:
+			singletonlogger.Info(paxostracker.AsTable())
 		default:
 		}
 	}

@@ -115,7 +115,6 @@ func (c *Client) Read() (value string, err error) {
 func (c *Client) Write(value string) (err error) {
 	paxostracker.Prepare(c.listener.Addr().String())
 	_, err = c.paxosNode.WriteToPaxosNode(value)
-	fmt.Println(paxostracker.AsTable())
 	return err
 }
 

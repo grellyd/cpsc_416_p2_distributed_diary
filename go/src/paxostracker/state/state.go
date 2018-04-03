@@ -26,7 +26,7 @@ const (
 	Accepted PaxosState = "Accepted"
 
 	// Error is when something has gone wrong. Only goes to Idle
-	Error
+	Error PaxosState = "Error"
 )
 
 // OneOf determines if the given state is contained with in the collection

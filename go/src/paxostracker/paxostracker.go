@@ -128,5 +128,11 @@ func AsTable() string {
 	for _, round := range(completedRounds) {
 		rows += round.AsRow()
 	}
-	return fmt.Sprintf("\n======================\nCurrent State: %v\n======================\n%v", tracker.currentState, rows)
+	var pstate state.PaxosState
+	if tracker == nil {
+		pstate = state.Idle
+	} else {
+		pstate = tracker.currentState
+	}
+	return fmt.Sprintf("\n======================\nCurrent State: %v\n======================\n%v", pstate, rows)
 }
