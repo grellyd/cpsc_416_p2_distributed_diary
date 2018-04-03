@@ -13,13 +13,13 @@ package main
 
 import (
 	"consensuslib"
-	"paxostracker"
 	"distributeddiaryapp/cli"
 	"distributeddiaryapp/networking"
 	"filelogger/singletonlogger"
 	"filelogger/state"
 	"fmt"
 	"os"
+	"paxostracker"
 	"regexp"
 	"strconv"
 	"strings"
