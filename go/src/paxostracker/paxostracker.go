@@ -26,6 +26,9 @@ var completedRounds []PaxosRound
 var currentRound *PaxosRound
 
 // signal channels
+var preparePause chan struct{}
+var proposePause chan struct{}
+var learnPause chan struct{}
 var idlePause chan struct{}
 var continuePaxos chan struct{}
 
@@ -34,6 +37,9 @@ func NewPaxosTracker() (err error) {
 	tracker = &PaxosTracker{
 			currentState: state.Idle,
 	}
+	preparePause = make(chan struct{})
+	proposePause = make(chan struct{})
+	learnPause = make(chan struct{})
 	idlePause = make(chan struct{}) 
 	continuePaxos = make(chan struct{})
 	return nil
@@ -45,6 +51,13 @@ func Prepare(callerAddr string) error {
 	if tracker == nil {
 		singletonlogger.Error("Error: PaxosTracker Uninitialised")
 		return nil
+	}
+
+	select {
+	case <- preparePause:
+		// blocks until continue channel is filled
+		<- continuePaxos
+	default:
 	}
 	switch tracker.currentState {
 	case state.Idle:
@@ -64,6 +77,14 @@ func Propose(acceptedPrep uint64) error {
 		singletonlogger.Error("Error: PaxosTracker Uninitialised")
 		return nil
 	}
+
+	select {
+	case <- proposePause:
+		// blocks until continue channel is filled
+		<- continuePaxos
+	default:
+	}
+	
 	switch tracker.currentState {
 	case state.Preparing:
 	default:
@@ -80,6 +101,14 @@ func Learn(acceptedProp uint64) error {
 		singletonlogger.Error("Error: PaxosTracker Uninitialised")
 		return nil
 	}
+
+	select {
+	case <- learnPause:
+		// blocks until continue channel is filled
+		<- continuePaxos
+	default:
+	}
+	
 	switch tracker.currentState {
 	case state.Proposing:
 	default:
@@ -96,10 +125,10 @@ func Idle(finalValue string) error {
 		singletonlogger.Error("Error: PaxosTracker Uninitialised")
 		return nil
 	}
-
 	
 	select {
 	case <- idlePause:
+		// blocks until continue channel is filled
 		<- continuePaxos
 	default:
 	}
@@ -138,16 +167,19 @@ func Error(reason string) error {
 
 // PauseNextPrepare will block on the next prepare call till continue
 func PauseNextPrepare() error {
+	preparePause <- struct{}{}
 	return nil
 }
 
 // PauseNextPropose will block on the next propose call till continue
 func PauseNextPropose() error {
+	proposePause <- struct{}{}
 	return nil
 }
 
 // PauseNextLearn will block on the next learn call till continue
 func PauseNextLearn() error {
+	learnPause <- struct{}{}
 	return nil
 }
 

@@ -15,7 +15,7 @@ const (
 	WRITE = "write"
 	HELP  = "help"
 	ROUNDS = "rounds"
-	PAUSE = "pause"
+	PAUSEBEFORE = "pause"
 	CONTINUE = "continue"
 )
 
@@ -24,7 +24,7 @@ type Command struct {
 	Data    *[]string
 }
 
-var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit|rounds|pause (prepare|propose|learn|idle)|continue)")
+var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit|rounds|pausebefore (prepare|propose|learn|idle)|continue)")
 
 var helpString = `
 ===========================================
@@ -56,7 +56,7 @@ rounds
 -------
 - produce the round results from the paxostracker
 
-pause [prepare|propose|learn|idle]
+pausebefore [prepare|propose|learn|idle]
 ----------------------------------
 - pause the client's execution at the selected stage for the next round until 'continue' is called
 
@@ -84,7 +84,7 @@ func Run() (cmd Command) {
 				return Command{WRITE, &writeArgs}
 			case 'p':
 				when := strings.Split(command[0], " ")[1:]
-				return Command{PAUSE, &when}
+				return Command{PAUSEBEFORE, &when}
 			default:
 				switch command[0] {
 				case ALIVE:

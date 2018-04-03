@@ -27,6 +27,8 @@ import (
 )
 
 var validArgs = regexp.MustCompile("[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,5} [0-9]{1,5}( " + localFlag + ")*( " + debugFlag + ")*")
+var paused bool
+var written bool
 
 const (
 	serverAddrDefault = "127.0.0.1:12345"
@@ -78,6 +80,13 @@ func serveCli(client *consensuslib.Client) {
 			checkError(err)
 			singletonlogger.Info(fmt.Sprintf("Reading: \n%s", value))
 		case cli.WRITE:
+			if paused  && !written{
+				written = true
+			} else if paused && written {
+				singletonlogger.Info("This client is paused. Please 'continue' before writing again.")
+				break
+			}
+			
 			value := ""
 			for i, s := range *command.Data {
 				// add spaces
@@ -88,12 +97,29 @@ func serveCli(client *consensuslib.Client) {
 				}
 			}
 			go client.Write(value)
-		case cli.PAUSE:
+		case cli.PAUSEBEFORE:
+			if paused {
+				singletonlogger.Info("This client is paused. Please 'continue' before pausing again.")
+				break
+			}
+			paused = true
 			data := *command.Data
-			fmt.Println(data)
-			singletonlogger.Info("Pausing next " + data[0])
-			go paxostracker.PauseNextIdle()
+			singletonlogger.Info("Pausing before next " + data[0])
+			switch data[0] {
+			case "prepare":
+				go paxostracker.PauseNextPrepare()
+			case "propose":
+				go paxostracker.PauseNextPropose()
+			case "learn":
+				go paxostracker.PauseNextLearn()
+			case "idle":
+				go paxostracker.PauseNextIdle()
+			default:
+				singletonlogger.Error(fmt.Sprintf("Couldn't identify '%s'", data[0]))
+			}
 		case cli.CONTINUE:
+			paused = false
+			written = false
 			singletonlogger.Info("Continuing...")
 			go paxostracker.Continue()
 		case cli.ROUNDS:
@@ -109,6 +135,9 @@ func Exit() {
 	singletonlogger.Info("Closing the Chamber of Secrets...")
 	singletonlogger.Info("Goodbye!")
 	os.Exit(0)
+}
+
+func checkPause() {
 }
 
 func parseArgs(args []string) (serverAddr string, localAddr string, outboundAddr string, logstate state.State, err error) {
