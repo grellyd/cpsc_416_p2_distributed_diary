@@ -17,6 +17,14 @@ const (
 	ROUNDS = "rounds"
 	PAUSEBEFORE = "pause"
 	CONTINUE = "continue"
+	STEP = "step"
+)
+
+const (
+	Prepare = "prepare"
+	Propose = "propose"
+	Learn = "learn"
+	Idle = "idle"
 )
 
 type Command struct {
@@ -24,7 +32,7 @@ type Command struct {
 	Data    *[]string
 }
 
-var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit|rounds|pausebefore (prepare|propose|learn|idle)|continue)")
+var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit|rounds|pausebefore (prepare|propose|learn|idle)|continue|step)")
 
 var helpString = `
 ===========================================
@@ -64,6 +72,10 @@ continue
 --------
 - continue the round
 
+step
+----
+- step one stage further
+
 Created for:
 CPSC 416 Distributed Systems, in the 2017W2 Session at the University of British Columbia (UBC)
 
@@ -99,6 +111,8 @@ func Run() (cmd Command) {
 					return Command{ROUNDS, nil}
 				case CONTINUE:
 					return Command{CONTINUE, nil}
+				case STEP:
+					return Command{STEP, nil}
 				}
 			}
 		} else {

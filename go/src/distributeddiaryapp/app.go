@@ -29,6 +29,7 @@ import (
 var validArgs = regexp.MustCompile("[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,5} [0-9]{1,5}( " + localFlag + ")*( " + debugFlag + ")*")
 var paused bool
 var written bool
+var pauseState string
 
 const (
 	serverAddrDefault = "127.0.0.1:12345"
@@ -98,24 +99,29 @@ func serveCli(client *consensuslib.Client) {
 			}
 			go client.Write(value)
 		case cli.PAUSEBEFORE:
-			if paused {
+			if paused  && !written{
+				singletonlogger.Info("This client is ready to be paused. Please 'continue' before pausing again.")
+				break
+			} else if paused && written {
 				singletonlogger.Info("This client is paused. Please 'continue' before pausing again.")
 				break
 			}
 			paused = true
 			data := *command.Data
-			singletonlogger.Info("Pausing before next " + data[0])
-			switch data[0] {
-			case "prepare":
+			pauseState = data[0]
+			singletonlogger.Info("Pausing before next " + pauseState)
+			switch pauseState {
+			case cli.Prepare:
 				go paxostracker.PauseNextPrepare()
-			case "propose":
+			case cli.Propose:
 				go paxostracker.PauseNextPropose()
-			case "learn":
+			case cli.Learn:
 				go paxostracker.PauseNextLearn()
-			case "idle":
+			case cli.Idle:
 				go paxostracker.PauseNextIdle()
 			default:
-				singletonlogger.Error(fmt.Sprintf("Couldn't identify '%s'", data[0]))
+				singletonlogger.Error(fmt.Sprintf("Couldn't identify '%s'", pauseState))
+				paused = false
 			}
 		case cli.CONTINUE:
 			paused = false
@@ -124,6 +130,32 @@ func serveCli(client *consensuslib.Client) {
 			go paxostracker.Continue()
 		case cli.ROUNDS:
 			singletonlogger.Info(paxostracker.AsTable())
+		case cli.STEP:
+			if !paused {
+				singletonlogger.Info("Unable to step: Not paused!")
+				break
+			}
+			switch pauseState {
+			case cli.Prepare:
+				singletonlogger.Info("Pausing before next Propose")
+				pauseState = cli.Propose
+				go paxostracker.PauseNextPropose()
+				go paxostracker.Continue()
+			case cli.Propose:
+				singletonlogger.Info("Pausing before next Learn")
+				pauseState = cli.Learn
+				go paxostracker.PauseNextLearn()
+				go paxostracker.Continue()
+			case cli.Learn:
+				singletonlogger.Info("Pausing before next Idle")
+				pauseState = cli.Idle
+				go paxostracker.PauseNextIdle()
+				go paxostracker.Continue()
+			case cli.Idle:
+				singletonlogger.Info("Cannot step beyond Idle. Please 'continue'")
+			default:
+				singletonlogger.Error(fmt.Sprintf("Couldn't identify '%s'", pauseState))
+			}
 		default:
 		}
 	}
