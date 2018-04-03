@@ -15,6 +15,7 @@ type PaxosNodeRPCWrapper = paxosnode.PaxosNodeRPCWrapper
 // Client in the consensuslib
 type Client struct {
 	localAddr     string
+	outboundAddr  string
 	heartbeatRate time.Duration
 
 	listener        net.Listener
@@ -26,12 +27,12 @@ type Client struct {
 }
 
 // NewClient creates a new Client, ready to connect
-func NewClient(clientAddr string, heartbeatRate time.Duration) (client *Client, err error) {
+func NewClient(localAddr string, outboundAddr string, heartbeatRate time.Duration) (client *Client, err error) {
 	client = &Client{
 		heartbeatRate: heartbeatRate,
 	}
 
-	addr, err := net.ResolveTCPAddr("tcp", clientAddr)
+	addr, err := net.ResolveTCPAddr("tcp", localAddr)
 	if err != nil {
 		return nil, fmt.Errorf("[LIB/CLIENT]#NewClient: unable to resolve client addr: %s", err)
 	}
@@ -67,7 +68,7 @@ func (c *Client) Connect(serverAddr string) (err error) {
 		return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to connect to server: %s", err)
 	}
 	singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#Connect: Registering to server at: %s\n", serverAddr))
-	err = c.serverRPCClient.Call("Server.Register", c.localAddr, &c.neighbors)
+	err = c.serverRPCClient.Call("Server.Register", c.outboundAddr, &c.neighbors)
 	if err != nil {
 		return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to register with server: %s", err)
 	}

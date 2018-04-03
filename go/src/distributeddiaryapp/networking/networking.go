@@ -2,6 +2,7 @@ package networking
 
 import (
 	"fmt"
+	"strings"
 	"os/exec"
 )
 
@@ -13,5 +14,6 @@ func GetOutboundIP() (ipString string, err error) {
 		fmt.Println(err)
 	}
 
-	return fmt.Sprintf("%s", out), nil
+	result := fmt.Sprintf("%s", out)
+	return strings.TrimSpace(result), nil
 }
