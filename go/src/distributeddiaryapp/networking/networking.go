@@ -2,20 +2,16 @@ package networking
 
 import (
 	"fmt"
-	"net"
-	"strings"
+	"os/exec"
 )
 
 // GetOutboundIP Returns a machine's public (outbound) IP address e.g. "270.0.21.1".
 func GetOutboundIP() (ipString string, err error) {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
+	out, err := exec.Command("curl -s http://checkip.amazonaws.com || printf \"0.0.0.0\"").Output()
+
 	if err != nil {
-		fmt.Println("Outbound IP couldn't be fetched")
-		return "", err
+		fmt.Println(err)
 	}
 
-	defer conn.Close()
-	localAddr := conn.LocalAddr().String()
-	index := strings.LastIndex(localAddr, ":")
-	return localAddr[0:index], nil
+	return fmt.Sprintf("%s", out), nil
 }
