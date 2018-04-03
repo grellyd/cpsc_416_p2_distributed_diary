@@ -43,7 +43,7 @@ func NewClient(localAddr string, outboundAddr string, heartbeatRate time.Duratio
 	}
 	client.localAddr = client.listener.Addr().String()
 	client.outboundAddr = outboundAddr
-	singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#NewClient: Listening on IP address%v", client.localAddr))
+	singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#NewClient: Listening on IP address %v", client.localAddr))
 
 	// create the paxosnode
 	client.paxosNode, err = paxosnode.NewPaxosNode(client.outboundAddr)

@@ -51,7 +51,7 @@ func main() {
 	checkError(err)
 	err = singletonlogger.NewSingletonLogger("app", logstate)
 	checkError(err)
-	singletonlogger.Debug("starting application at " + outboundAddr)
+	singletonlogger.Debug("starting application at " + localAddr + " with outbound address " + outboundAddr)
 	client, err := consensuslib.NewClient(localAddr, outboundAddr, 1*time.Millisecond)
 	checkError(err)
 	singletonlogger.Debug("created client at " + localAddr)
@@ -129,15 +129,17 @@ func parseArgs(args []string) (serverAddr string, localAddr string, outboundAddr
 		}
 	}
 	addrEnd := fmt.Sprintf(":%d", port)
-	localAddr = "127.0.0.1" + addrEnd
 	if isLocal {
+		localAddr = "127.0.0.1" + addrEnd
 		outboundAddr = "127.0.0.1" + addrEnd
 	} else {
-		ip, err := networking.GetOutboundIP()
+		outboundIp, err := networking.GetOutboundIP()
 		if err != nil {
 			return serverAddr, localAddr, outboundAddr, logstate, fmt.Errorf("error while fetching ip: %s", err)
 		}
-		 outboundAddr = ip + addrEnd
+		outboundAddr = outboundIp + addrEnd
+		localAddr = addrEnd
+
 	}
 	return serverAddr, localAddr, outboundAddr, logstate, nil
 }

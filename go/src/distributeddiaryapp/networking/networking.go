@@ -6,7 +6,7 @@ import (
 	"os/exec"
 )
 
-// GetOutboundIP Returns a machine's public (outbound) IP address e.g. "270.0.21.1".
+// GetOutboundIP Returns a machine's public (outbound) Azure IP address e.g. "270.0.21.1"
 func GetOutboundIP() (ipString string, err error) {
 	out, err := exec.Command("curl", "-s", "http://checkip.amazonaws.com").Output()
 
@@ -17,3 +17,4 @@ func GetOutboundIP() (ipString string, err error) {
 	result := fmt.Sprintf("%s", out)
 	return strings.TrimSpace(result), nil
 }
+
