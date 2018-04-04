@@ -94,7 +94,7 @@ func (l *LearnerRole) LearnValue(m *Message) (newCurrentRoundIndex int, err erro
 
 func (l *LearnerRole) inLog(m *Message) bool {
 	for _, v := range l.Log {
-		if v.ID == m.ID && v.Value == m.Value {
+		if v.MsgHash == m.MsgHash {
 			return true
 		}
 	}

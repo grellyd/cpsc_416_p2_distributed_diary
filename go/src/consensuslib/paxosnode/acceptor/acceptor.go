@@ -67,7 +67,8 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 	singletonlogger.Debug("[Acceptor] process accept")
 	if &acceptor.LastAccepted == nil {
 		if msg.ID == acceptor.LastPromised.ID &&
-			msg.FromProposerID == acceptor.LastPromised.FromProposerID {
+			//msg.FromProposerID == acceptor.LastPromised.FromProposerID {
+			msg.MsgHash == acceptor.LastPromised.MsgHash {
 			acceptor.LastAccepted = msg
 		} else if msg.ID > acceptor.LastPromised.ID {
 			//acceptor.LastPromised = msg
@@ -75,8 +76,9 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 		}
 	} else {
 		if msg.ID == acceptor.LastPromised.ID &&
-			acceptor.LastPromised.FromProposerID == msg.FromProposerID &&
-				acceptor.LastPromised.RoundNum == roundNum {
+			//acceptor.LastPromised.FromProposerID == msg.FromProposerID &&
+				//acceptor.LastPromised.RoundNum == roundNum {
+			acceptor.LastPromised.MsgHash == msg.MsgHash {
 			acceptor.LastAccepted = msg
 		} else if (msg.ID > acceptor.LastPromised.ID && acceptor.LastPromised.RoundNum >= roundNum) ||
 			(msg.ID > acceptor.LastAccepted.ID && acceptor.LastAccepted.RoundNum >= roundNum) {

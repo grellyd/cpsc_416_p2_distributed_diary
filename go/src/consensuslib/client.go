@@ -8,7 +8,11 @@ import (
 	"net"
 	"net/rpc"
 	"time"
+	"math/rand"
 )
+
+// Represents the length of message hash
+const MSGHASHLEN  = 4
 
 // PaxosNodeRPCWrapper is the rpc wrapper around the paxos node
 type PaxosNodeRPCWrapper = paxosnode.PaxosNodeRPCWrapper
@@ -117,7 +121,8 @@ func (c *Client) Read() (value string, err error) {
 // TODO: Check for error
 func (c *Client) Write(value string) (err error) {
 	paxostracker.Prepare(c.listener.Addr().String())
-	_, err = c.paxosNode.WriteToPaxosNode(value)
+	messageHash := generateMessageHash(MSGHASHLEN)
+	_, err = c.paxosNode.WriteToPaxosNode(value, messageHash)
 	return err
 }
 
@@ -141,4 +146,17 @@ func (c *Client) SendHeartbeats() (err error) {
 		}
 	}
 	return nil
+}
+
+func generateMessageHash(length int) string {
+	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }

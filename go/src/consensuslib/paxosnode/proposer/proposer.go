@@ -33,28 +33,30 @@ type ProposerInterface interface {
 	IncrementMessageID()
 }
 
-func (proposer *ProposerRole) CreatePrepareRequest(roundNum int) Message {
+func (proposer *ProposerRole) CreatePrepareRequest(roundNum int, msgHash string) Message {
 	// Increment the messageID (n value) every time a new prepare request is made
 	proposer.messageID++
 	singletonlogger.Debug(fmt.Sprintf("[Proposer] message ID at proposer %v", proposer.messageID))
-	prepareRequest := Message{
+	/*prepareRequest := Message{
 		ID:             proposer.messageID,
 		Type:           message.PREPARE,
 		Value:          "",
 		FromProposerID: proposer.proposerID,
 		RoundNum:		roundNum,
-	}
+	}*/
+	prepareRequest := message.NewMessage(proposer.messageID, msgHash, message.PREPARE, "", proposer.proposerID,roundNum)
 	return prepareRequest
 }
 
-func (proposer *ProposerRole) CreateAcceptRequest(value string, roundNum int) Message {
-	acceptRequest := Message{
+func (proposer *ProposerRole) CreateAcceptRequest(value, msgHash string, roundNum int) Message {
+	/*acceptRequest := Message{
 		ID:             proposer.messageID,
 		Type:           message.ACCEPT,
 		Value:          value,
 		FromProposerID: proposer.proposerID,
 		RoundNum:		roundNum,
-	}
+	}*/
+	acceptRequest := message.NewMessage(proposer.messageID, msgHash, message.ACCEPT, value, proposer.proposerID,roundNum)
 	return acceptRequest
 }
 

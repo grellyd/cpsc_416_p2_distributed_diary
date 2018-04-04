@@ -77,9 +77,9 @@ func (pn *PaxosNode) UnmountPaxosNode() (err error) {
 }
 
 // Handles the entire process of proposing a value and trying to achieve consensus
-func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
+func (pn *PaxosNode) WriteToPaxosNode(value, msgHash string) (success bool, err error) {
 	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Writing to paxos %v", value))
-	prepReq := pn.Proposer.CreatePrepareRequest(pn.RoundNum)
+	prepReq := pn.Proposer.CreatePrepareRequest(pn.RoundNum, msgHash)
 	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Prepare request is id: %d , val: %s, type: %d, round: %d \n", prepReq.ID, prepReq.Value, prepReq.Type, prepReq.RoundNum))
 	numAccepted, err := pn.DisseminateRequest(prepReq)
 	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Pledged to accept %v", numAccepted))
@@ -90,9 +90,9 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 
 	// If majority is not reached, sleep for a while and try again
 	// TODO: check whether should retry must return an error if no connection or something
-	pn.ShouldRetry(numAccepted, value)
+	pn.ShouldRetry(numAccepted, value, msgHash)
 
-	accReq := pn.Proposer.CreateAcceptRequest(value, pn.RoundNum)
+	accReq := pn.Proposer.CreateAcceptRequest(value, msgHash, pn.RoundNum)
 	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Accept request is id: %d , val: %s, type: %d \n", accReq.ID, accReq.Value, accReq.Type))
 	paxostracker.Propose(accReq.ID)
 	numAccepted, err = pn.DisseminateRequest(accReq)
@@ -101,7 +101,7 @@ func (pn *PaxosNode) WriteToPaxosNode(value string) (success bool, err error) {
 	}
 	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Accepted %v", numAccepted))
 	// If majority is not reached, sleep for a while and try again
-	pn.ShouldRetry(numAccepted, value)
+	pn.ShouldRetry(numAccepted, value, msgHash)
 	paxostracker.Learn(0)
 
 	// Remove all the failed neighbours at the end of a round
@@ -360,22 +360,23 @@ func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
 	//singletonlogger.Debug("[paxosnode] in CountForNumAlreadyAccepted, how many accepted ", numSeen)
 	if pn.IsMajority(numSeen) {
 		// TODO: Learner.LearnValue returns the next round #; use the new round # somewhere?
-		if !pn.IsInLog(m) {
+		/*if !pn.IsInLog(m) {
 			pn.Learner.LearnValue(m)
 			pn.RoundNum++
-		}
+		}*/
+		pn.Learner.LearnValue(m)
+		pn.RoundNum++
 	}
 	singletonlogger.Debug(fmt.Sprintf("[paxosnode] in CountForNumAlreadyAccepte%vd, value learned, next round # ", pn.RoundNum))
 }
 
-func (pn *PaxosNode) ShouldRetry(numAccepted int, value string) {
-	paxostracker.Custom()
+func (pn *PaxosNode) ShouldRetry(numAccepted int, value, msgHash string) {
 	if !pn.IsMajority(numAccepted) {
 		// Before retrying, we must clear the failed neighbours
 		pn.ClearFailedNeighbours()
 		numAccepted = 0
 		time.Sleep(message.SLEEPTIME)
-		pn.WriteToPaxosNode(value)
+		pn.WriteToPaxosNode(value, msgHash)
 	}
 }
 
@@ -400,11 +401,11 @@ func (pn *PaxosNode) RemoveNbrAddr(ip string) {
 	}
 }
 
-func (pn *PaxosNode) IsInLog(m *Message) bool {
+/*func (pn *PaxosNode) IsInLog(m *Message) bool {
 	for _,v := range pn.Learner.Log {
-		if v.ID == m.ID && v.FromProposerID == m.FromProposerID {
+		if v.MsgHash == m.MsgHash {
 			return true
 		}
 	}
 	return false
-}
+}*/
