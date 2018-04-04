@@ -157,7 +157,6 @@ func Custom() error {
 		singletonlogger.Error("Error: PaxosTracker Uninitialised")
 		return nil
 	}
-	singletonlogger.Info("Pausing at custom breakpoint")
 	select {
 	case <- customPause:
 		<- continuePaxos

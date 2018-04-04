@@ -368,6 +368,7 @@ func (pn *PaxosNode) CountForNumAlreadyAccepted(m *Message) {
 }
 
 func (pn *PaxosNode) ShouldRetry(numAccepted int, value string) {
+	paxostracker.Custom()
 	if !pn.IsMajority(numAccepted) {
 		// Before retrying, we must clear the failed neighbours
 		pn.ClearFailedNeighbours()

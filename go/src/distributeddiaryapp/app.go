@@ -119,6 +119,8 @@ func serveCli(client *consensuslib.Client) {
 				go paxostracker.PauseNextLearn()
 			case cli.Idle:
 				go paxostracker.PauseNextIdle()
+			case cli.Custom:
+				go paxostracker.PauseNextCustom()
 			default:
 				singletonlogger.Error(fmt.Sprintf("Couldn't identify '%s'", pauseState))
 				paused = false

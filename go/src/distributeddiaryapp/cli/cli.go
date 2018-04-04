@@ -25,6 +25,7 @@ const (
 	Propose = "propose"
 	Learn = "learn"
 	Idle = "idle"
+	Custom = "custom"
 )
 
 type Command struct {
@@ -32,7 +33,7 @@ type Command struct {
 	Data    *[]string
 }
 
-var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit|rounds|pausebefore (prepare|propose|learn|idle)|continue|step)")
+var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit|rounds|pausebefore (prepare|propose|learn|idle|custom)|continue|step)")
 
 var helpString = `
 ===========================================
@@ -64,7 +65,7 @@ rounds
 -------
 - produce the round results from the paxostracker
 
-pausebefore [prepare|propose|learn|idle]
+pausebefore [prepare|propose|learn|idle|custom]
 ----------------------------------
 - pause the client's execution at the selected stage for the next round until 'continue' is called
 
