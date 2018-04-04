@@ -30,6 +30,7 @@ var preparePause chan struct{}
 var proposePause chan struct{}
 var learnPause chan struct{}
 var idlePause chan struct{}
+var customPause chan struct{}
 var continuePaxos chan struct{}
 
 // NewPaxosTracker creates a new tracker
@@ -41,6 +42,7 @@ func NewPaxosTracker() (err error) {
 	proposePause = make(chan struct{})
 	learnPause = make(chan struct{})
 	idlePause = make(chan struct{}) 
+	customPause = make(chan struct{})
 	continuePaxos = make(chan struct{})
 	return nil
 }
@@ -149,6 +151,22 @@ func Idle(finalValue string) error {
 	return nil
 }
 
+// Custom pause point
+func Custom() error {
+	if tracker == nil {
+		singletonlogger.Error("Error: PaxosTracker Uninitialised")
+		return nil
+	}
+	singletonlogger.Info("Pausing at custom breakpoint")
+	select {
+	case <- customPause:
+		<- continuePaxos
+	default:
+	}
+	return nil
+}
+	
+
 // Error transition
 func Error(reason string) error {
 	if tracker == nil {
@@ -186,6 +204,12 @@ func PauseNextLearn() error {
 // PauseNextIdle will block on the next idle call till continue
 func PauseNextIdle() error {
 	idlePause <- struct{}{}
+	return nil
+}
+
+// PauseNextCustom will block on the next custom call till continue
+func PauseNextCustom() error {
+	customPause <- struct{}{}
 	return nil
 }
 
