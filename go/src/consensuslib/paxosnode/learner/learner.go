@@ -82,9 +82,21 @@ func (l *LearnerRole) LearnValue(m *Message) (newCurrentRoundIndex int, err erro
 		// Since Learner manages this state, this should theoretically never happen...
         return l.CurrentRound, errors.ValueForRoundInLogExistsError(l.CurrentRound)
 	} else {
+		if l.inLog(m) {
+			return l.CurrentRound, nil
+		}
 		l.Log = append(l.Log, *m)
 		singletonlogger.Debug(fmt.Sprintf("[learner] Wrote value %v to log at index %v", l.Log[l.CurrentRound], l.CurrentRound))
 		l.CurrentRound++ // TODO: Once we have the concept of rounds
 		return l.CurrentRound, nil
 	}
+}
+
+func (l *LearnerRole) inLog(m *Message) bool {
+	for _, v := range l.Log {
+		if v.ID == m.ID && v.Value == m.Value {
+			return true
+		}
+	}
+	return false
 }

@@ -53,7 +53,7 @@ func (acceptor *AcceptorRole) ProcessPrepare(msg Message, roundNum int) Message 
 	if &acceptor.LastPromised == nil ||
 		(msg.ID > acceptor.LastPromised.ID && roundNum >= acceptor.LastPromised.RoundNum) {
 		acceptor.LastPromised = msg
-	} else if acceptor.LastPromised.ID > msg.ID &&
+	} else if msg.ID > acceptor.LastPromised.ID&&
 		//acceptor.LastPromised.FromProposerID == msg.FromProposerID &&
 			acceptor.LastPromised.RoundNum == roundNum {
 		acceptor.LastPromised = msg

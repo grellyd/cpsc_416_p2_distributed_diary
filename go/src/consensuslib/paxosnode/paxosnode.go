@@ -208,7 +208,8 @@ func (pn *PaxosNode) AcceptNeighbourConnection(addr string, result *bool) (err e
 func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err error) {
 	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Disseminate request %v", prepReq.Type))
 	numAccepted = 0
-	respReq := prepReq
+	//respReq := prepReq
+	respReq := *(new(Message))
 	switch prepReq.Type {
 	case message.PREPARE:
 		singletonlogger.Debug("[paxosnode] PREPARE")
