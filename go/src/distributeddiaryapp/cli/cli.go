@@ -8,6 +8,13 @@ import (
 	"strings"
 )
 
+// Command is a cli command
+type Command struct {
+	Command string
+	Data    *[]string
+}
+
+// Commands
 const (
 	ALIVE = "alive"
 	EXIT  = "exit"
@@ -15,11 +22,12 @@ const (
 	WRITE = "write"
 	HELP  = "help"
 	ROUNDS = "rounds"
-	PAUSEBEFORE = "pause"
+	BREAK = "break"
 	CONTINUE = "continue"
 	STEP = "step"
 )
 
+// Breaks
 const (
 	Prepare = "prepare"
 	Propose = "propose"
@@ -28,12 +36,7 @@ const (
 	Custom = "custom"
 )
 
-type Command struct {
-	Command string
-	Data    *[]string
-}
-
-var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit|rounds|pausebefore (prepare|propose|learn|idle|custom)|continue|step)")
+var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit|rounds|break (prepare|propose|learn|idle|custom)|continue|step)")
 
 var helpString = `
 ===========================================
@@ -65,9 +68,9 @@ rounds
 -------
 - produce the round results from the paxostracker
 
-pausebefore [prepare|propose|learn|idle|custom]
+break [prepare|propose|learn|idle|custom]
 ----------------------------------
-- pause the client's execution at the selected stage for the next round until 'continue' is called
+- break the client's execution at the selected stage for the next round until 'continue' is called
 
 continue
 --------
@@ -83,6 +86,7 @@ CPSC 416 Distributed Systems, in the 2017W2 Session at the University of British
 Authors: Graham L. Brown (c6y8), Aleksandra Budkina (f1l0b), Larissa Feng (l0j8), Harryson Hu (n5w8), Sharon Yang (l5w8)
 `
 
+// Run the cli
 func Run() (cmd Command) {
 	for {
 		fmt.Printf("[DD]:")
@@ -97,7 +101,7 @@ func Run() (cmd Command) {
 				return Command{WRITE, &writeArgs}
 			case 'p':
 				when := strings.Split(command[0], " ")[1:]
-				return Command{PAUSEBEFORE, &when}
+				return Command{BREAK, &when}
 			default:
 				switch command[0] {
 				case ALIVE:
@@ -118,7 +122,7 @@ func Run() (cmd Command) {
 			}
 		} else {
 			fmt.Println("Command not understood.")
-			fmt.Println(helpString)
+			fmt.Println("Type 'help' for command information.")
 		}
 	}
 }

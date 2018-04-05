@@ -26,11 +26,11 @@ var completedRounds []PaxosRound
 var currentRound *PaxosRound
 
 // signal channels
-var preparePause chan struct{}
-var proposePause chan struct{}
-var learnPause chan struct{}
-var idlePause chan struct{}
-var customPause chan struct{}
+var prepareBreak chan struct{}
+var proposeBreak chan struct{}
+var learnBreak chan struct{}
+var idleBreak chan struct{}
+var customBreak chan struct{}
 var continuePaxos chan struct{}
 
 // NewPaxosTracker creates a new tracker
@@ -38,11 +38,11 @@ func NewPaxosTracker() (err error) {
 	tracker = &PaxosTracker{
 			currentState: state.Idle,
 	}
-	preparePause = make(chan struct{})
-	proposePause = make(chan struct{})
-	learnPause = make(chan struct{})
-	idlePause = make(chan struct{}) 
-	customPause = make(chan struct{})
+	prepareBreak = make(chan struct{})
+	proposeBreak = make(chan struct{})
+	learnBreak = make(chan struct{})
+	idleBreak = make(chan struct{}) 
+	customBreak = make(chan struct{})
 	continuePaxos = make(chan struct{})
 	return nil
 }
@@ -56,7 +56,7 @@ func Prepare(callerAddr string) error {
 	}
 
 	select {
-	case <- preparePause:
+	case <- prepareBreak:
 		// blocks until continue channel is filled
 		<- continuePaxos
 	default:
@@ -81,7 +81,7 @@ func Propose(acceptedPrep uint64) error {
 	}
 
 	select {
-	case <- proposePause:
+	case <- proposeBreak:
 		// blocks until continue channel is filled
 		<- continuePaxos
 	default:
@@ -105,7 +105,7 @@ func Learn(acceptedProp uint64) error {
 	}
 
 	select {
-	case <- learnPause:
+	case <- learnBreak:
 		// blocks until continue channel is filled
 		<- continuePaxos
 	default:
@@ -129,7 +129,7 @@ func Idle(finalValue string) error {
 	}
 	
 	select {
-	case <- idlePause:
+	case <- idleBreak:
 		// blocks until continue channel is filled
 		<- continuePaxos
 	default:
@@ -158,7 +158,7 @@ func Custom() error {
 		return nil
 	}
 	select {
-	case <- customPause:
+	case <- customBreak:
 		<- continuePaxos
 	default:
 	}
@@ -182,33 +182,33 @@ func Error(reason string) error {
 	return nil
 }
 
-// PauseNextPrepare will block on the next prepare call till continue
-func PauseNextPrepare() error {
-	preparePause <- struct{}{}
+// BreakNextPrepare will block on the next prepare call till continue
+func BreakNextPrepare() error {
+	prepareBreak <- struct{}{}
 	return nil
 }
 
-// PauseNextPropose will block on the next propose call till continue
-func PauseNextPropose() error {
-	proposePause <- struct{}{}
+// BreakNextPropose will block on the next propose call till continue
+func BreakNextPropose() error {
+	proposeBreak <- struct{}{}
 	return nil
 }
 
-// PauseNextLearn will block on the next learn call till continue
-func PauseNextLearn() error {
-	learnPause <- struct{}{}
+// BreakNextLearn will block on the next learn call till continue
+func BreakNextLearn() error {
+	learnBreak <- struct{}{}
 	return nil
 }
 
-// PauseNextIdle will block on the next idle call till continue
-func PauseNextIdle() error {
-	idlePause <- struct{}{}
+// BreakNextIdle will block on the next idle call till continue
+func BreakNextIdle() error {
+	idleBreak <- struct{}{}
 	return nil
 }
 
-// PauseNextCustom will block on the next custom call till continue
-func PauseNextCustom() error {
-	customPause <- struct{}{}
+// BreakNextCustom will block on the next custom call till continue
+func BreakNextCustom() error {
+	customBreak <- struct{}{}
 	return nil
 }
 

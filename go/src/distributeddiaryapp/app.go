@@ -27,9 +27,9 @@ import (
 )
 
 var validArgs = regexp.MustCompile("[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,5} [0-9]{1,5}( " + localFlag + ")*( " + debugFlag + ")*")
-var paused bool
+var breaked bool
 var written bool
-var pauseState string
+var breakState string
 
 const (
 	serverAddrDefault = "127.0.0.1:12345"
@@ -81,13 +81,12 @@ func serveCli(client *consensuslib.Client) {
 			checkError(err)
 			singletonlogger.Info(fmt.Sprintf("Reading: \n%s", value))
 		case cli.WRITE:
-			if paused  && !written{
+			if breaked  && !written{
 				written = true
-			} else if paused && written {
-				singletonlogger.Info("This client is paused. Please 'continue' before writing again.")
+			} else if breaked && written {
+				singletonlogger.Info("This client is at a breakpoint. Please 'continue' before writing again.")
 				break
 			}
-			
 			value := ""
 			for i, s := range *command.Data {
 				// add spaces
@@ -98,65 +97,65 @@ func serveCli(client *consensuslib.Client) {
 				}
 			}
 			go client.Write(value)
-		case cli.PAUSEBEFORE:
-			if paused  && !written{
-				singletonlogger.Info("This client is ready to be paused. Please 'continue' before pausing again.")
+		case cli.BREAK:
+			if breaked  && !written{
+				singletonlogger.Info("This client is ready to hit a breakpoint. Please 'continue' before pausing again.")
 				break
-			} else if paused && written {
-				singletonlogger.Info("This client is paused. Please 'continue' before pausing again.")
+			} else if breaked && written {
+				singletonlogger.Info("This client is at a breakpoint. Please 'continue' before pausing again.")
 				break
 			}
-			paused = true
+			breaked = true
 			data := *command.Data
-			pauseState = data[0]
-			singletonlogger.Info("Pausing before next " + pauseState)
-			switch pauseState {
+			breakState = data[0]
+			singletonlogger.Info("Breaking before next " + breakState)
+			switch breakState {
 			case cli.Prepare:
-				go paxostracker.PauseNextPrepare()
+				go paxostracker.BreakNextPrepare()
 			case cli.Propose:
-				go paxostracker.PauseNextPropose()
+				go paxostracker.BreakNextPropose()
 			case cli.Learn:
-				go paxostracker.PauseNextLearn()
+				go paxostracker.BreakNextLearn()
 			case cli.Idle:
-				go paxostracker.PauseNextIdle()
+				go paxostracker.BreakNextIdle()
 			case cli.Custom:
-				go paxostracker.PauseNextCustom()
+				go paxostracker.BreakNextCustom()
 			default:
-				singletonlogger.Error(fmt.Sprintf("Couldn't identify '%s'", pauseState))
-				paused = false
+				singletonlogger.Error(fmt.Sprintf("Couldn't identify '%s'", breakState))
+				breaked = false
 			}
 		case cli.CONTINUE:
-			paused = false
+			breaked = false
 			written = false
 			singletonlogger.Info("Continuing...")
 			go paxostracker.Continue()
 		case cli.ROUNDS:
 			singletonlogger.Info(paxostracker.AsTable())
 		case cli.STEP:
-			if !paused {
-				singletonlogger.Info("Unable to step: Not paused!")
+			if !breaked {
+				singletonlogger.Info("Unable to step: Not at a breakpoint!")
 				break
 			}
-			switch pauseState {
+			switch breakState {
 			case cli.Prepare:
-				singletonlogger.Info("Pausing before next Propose")
-				pauseState = cli.Propose
-				go paxostracker.PauseNextPropose()
+				singletonlogger.Info("Breaking before next Propose")
+				breakState = cli.Propose
+				go paxostracker.BreakNextPropose()
 				go paxostracker.Continue()
 			case cli.Propose:
-				singletonlogger.Info("Pausing before next Learn")
-				pauseState = cli.Learn
-				go paxostracker.PauseNextLearn()
+				singletonlogger.Info("Breaking before next Learn")
+				breakState = cli.Learn
+				go paxostracker.BreakNextLearn()
 				go paxostracker.Continue()
 			case cli.Learn:
-				singletonlogger.Info("Pausing before next Idle")
-				pauseState = cli.Idle
-				go paxostracker.PauseNextIdle()
+				singletonlogger.Info("Breaking before next Idle")
+				breakState = cli.Idle
+				go paxostracker.BreakNextIdle()
 				go paxostracker.Continue()
 			case cli.Idle:
 				singletonlogger.Info("Cannot step beyond Idle. Please 'continue'")
 			default:
-				singletonlogger.Error(fmt.Sprintf("Couldn't identify '%s'", pauseState))
+				singletonlogger.Error(fmt.Sprintf("Couldn't identify '%s'", breakState))
 			}
 		default:
 		}
@@ -169,9 +168,6 @@ func Exit() {
 	singletonlogger.Info("Closing the Chamber of Secrets...")
 	singletonlogger.Info("Goodbye!")
 	os.Exit(0)
-}
-
-func checkPause() {
 }
 
 func parseArgs(args []string) (serverAddr string, localAddr string, outboundAddr string, logstate state.State, err error) {
