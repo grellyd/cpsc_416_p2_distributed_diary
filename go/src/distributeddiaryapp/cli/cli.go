@@ -99,7 +99,7 @@ func Run() (cmd Command) {
 				// split string for written string
 				writeArgs := strings.Split(command[0], " ")[1:]
 				return Command{WRITE, &writeArgs}
-			case 'p':
+			case 'b':
 				when := strings.Split(command[0], " ")[1:]
 				return Command{BREAK, &when}
 			default:
@@ -118,6 +118,9 @@ func Run() (cmd Command) {
 					return Command{CONTINUE, nil}
 				case STEP:
 					return Command{STEP, nil}
+				default:
+					fmt.Println("Command not understood.")
+					fmt.Println("Type 'help' for command information.")
 				}
 			}
 		} else {

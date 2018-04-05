@@ -102,7 +102,7 @@ func (pn *PaxosNode) WriteToPaxosNode(value, msgHash string) (success bool, err 
 	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Accepted %v", numAccepted))
 	// If majority is not reached, sleep for a while and try again
 	pn.ShouldRetry(numAccepted, value, msgHash)
-	paxostracker.Learn(0)
+	paxostracker.Learn(uint64(numAccepted))
 
 	// Remove all the failed neighbours at the end of a round
 	pn.ClearFailedNeighbours()

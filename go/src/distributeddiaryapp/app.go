@@ -69,6 +69,7 @@ func main() {
 func serveCli(client *consensuslib.Client) {
 	for {
 		command := cli.Run()
+		singletonlogger.Debug(fmt.Sprintf("[app] received command %v", command))
 		switch command.Command {
 		case cli.ALIVE:
 			isAlive, err := client.IsAlive()
