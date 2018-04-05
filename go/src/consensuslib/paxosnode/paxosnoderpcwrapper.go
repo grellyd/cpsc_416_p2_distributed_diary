@@ -4,6 +4,9 @@ import (
 	"filelogger/singletonlogger"
 	"consensuslib/message"
 	"fmt"
+	//"sync"
+	//"net/rpc"
+	//"time"
 )
 
 type Message = message.Message
@@ -66,6 +69,17 @@ func (p *PaxosNodeRPCWrapper) NotifyAboutAccepted(m *Message, r *bool) (err erro
 func (p *PaxosNodeRPCWrapper) ReadFromLearner(placeholder string, log *[]Message) (err error) {
 	*log, err = p.paxosNode.GetLog()
 	// return no errors, for now
+	return nil
+}
+
+func (p *PaxosNodeRPCWrapper) CleanYourNeighbours (neighbour string, b *bool) (err error) {
+	singletonlogger.Debug(fmt.Sprintf("[paxosnodewrapper] cleaning request from %s", neighbour))
+	*b = p.paxosNode.CleanNbrsOnRequest(neighbour)
+	return nil
+}
+
+func (p *PaxosNodeRPCWrapper) RUAlive (placeholder string, b *bool) (err error) {
+	*b = true
 	return nil
 }
 

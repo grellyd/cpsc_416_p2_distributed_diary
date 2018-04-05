@@ -33,7 +33,7 @@ type ProposerInterface interface {
 	IncrementMessageID()
 }
 
-func (proposer *ProposerRole) CreatePrepareRequest(roundNum int, msgHash string) Message {
+func (proposer *ProposerRole) CreatePrepareRequest(roundNum int, msgHash string, ttl int) Message {
 	// Increment the messageID (n value) every time a new prepare request is made
 	proposer.messageID++
 	singletonlogger.Debug(fmt.Sprintf("[Proposer] message ID at proposer %v", proposer.messageID))
@@ -44,11 +44,11 @@ func (proposer *ProposerRole) CreatePrepareRequest(roundNum int, msgHash string)
 		FromProposerID: proposer.proposerID,
 		RoundNum:		roundNum,
 	}*/
-	prepareRequest := message.NewMessage(proposer.messageID, msgHash, message.PREPARE, "", proposer.proposerID,roundNum)
+	prepareRequest := message.NewMessage(proposer.messageID, msgHash, message.PREPARE, "", proposer.proposerID, roundNum, ttl)
 	return prepareRequest
 }
 
-func (proposer *ProposerRole) CreateAcceptRequest(value, msgHash string, roundNum int) Message {
+func (proposer *ProposerRole) CreateAcceptRequest(value, msgHash string, roundNum int, ttl int) Message {
 	/*acceptRequest := Message{
 		ID:             proposer.messageID,
 		Type:           message.ACCEPT,
@@ -56,7 +56,7 @@ func (proposer *ProposerRole) CreateAcceptRequest(value, msgHash string, roundNu
 		FromProposerID: proposer.proposerID,
 		RoundNum:		roundNum,
 	}*/
-	acceptRequest := message.NewMessage(proposer.messageID, msgHash, message.ACCEPT, value, proposer.proposerID,roundNum)
+	acceptRequest := message.NewMessage(proposer.messageID, msgHash, message.ACCEPT, value, proposer.proposerID,roundNum, ttl)
 	return acceptRequest
 }
 

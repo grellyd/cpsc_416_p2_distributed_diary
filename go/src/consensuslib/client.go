@@ -14,6 +14,7 @@ import (
 // Represents the length of message hash
 const MSGHASHLEN  = 4
 
+
 // PaxosNodeRPCWrapper is the rpc wrapper around the paxos node
 type PaxosNodeRPCWrapper = paxosnode.PaxosNodeRPCWrapper
 
@@ -122,7 +123,7 @@ func (c *Client) Read() (value string, err error) {
 func (c *Client) Write(value string) (err error) {
 	paxostracker.Prepare(c.listener.Addr().String())
 	messageHash := generateMessageHash(MSGHASHLEN)
-	_, err = c.paxosNode.WriteToPaxosNode(value, messageHash)
+	_, err = c.paxosNode.WriteToPaxosNode(value, messageHash, paxosnode.TTL)
 	return err
 }
 

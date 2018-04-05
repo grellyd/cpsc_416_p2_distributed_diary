@@ -86,7 +86,8 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 		}
 	}
 	singletonlogger.Debug(fmt.Sprintf("[Acceptor] accepted id: %d, val: %s, round: %d \n", acceptor.LastAccepted.ID, acceptor.LastAccepted.Value, roundNum))
-	acceptor.saveIntoFile(acceptor.LastAccepted)
+	//TODO: 2!!!! put in goroutine?
+	go acceptor.saveIntoFile(acceptor.LastAccepted)
 	return acceptor.LastAccepted
 
 }

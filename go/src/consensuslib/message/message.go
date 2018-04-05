@@ -20,9 +20,10 @@ type Message struct {
 	Value          string  // value that needs to be written into log
 	FromProposerID string  // Proposer's ID to distinguish when same ID message arrived
 	RoundNum	   int	   // The number of the round the message is for
+	Bounces		   int	   // TTL for the message
 }
 
-func NewMessage(id uint64, msgHash string, msgType MsgType, val string, pid string, roundNum int) Message {
+func NewMessage(id uint64, msgHash string, msgType MsgType, val string, pid string, roundNum, ttl int) Message {
 	m := Message{
 		id,
 		msgHash,
@@ -30,12 +31,14 @@ func NewMessage(id uint64, msgHash string, msgType MsgType, val string, pid stri
 		val,
 		pid,
 		roundNum,
+		ttl,
 	}
 	return m
 }
 
 func (m *Message) Equals(m1 *Message) bool {
-	if m.ID == m1.ID && m.Value == m1.Value {
+	//if m.ID == m1.ID && m.Value == m1.Value {
+	if m.MsgHash == m1.MsgHash{
 		return true
 	}
 	return false
