@@ -22,7 +22,10 @@ type AcceptorRole struct {
 }
 
 func NewAcceptor() AcceptorRole {
-	id := generateAcceptorID(6)
+	// since testing environment is on the same machine the id is generated
+	// for the production environment each machine has its separate space, so, naming is the same
+	id := generateAcceptorID(6)  // for the testing environment
+	//id := "a"						// for the production environment
 	acc := AcceptorRole{
 		id,
 		Message{},
@@ -124,10 +127,7 @@ func (acceptor *AcceptorRole) RestoreFromBackup() {
 
 // creates a log for acceptor in case of disconnection
 func (a *AcceptorRole)saveIntoFile(msg Message) (err error) {
-	/*addr, errn := net.ResolveTCPAddr("tcp", msg.FromProposerID)
-	if errn != nil {
-		singletonlogger.Debug("[Acceptor] can't resolve own address")
-	}*/
+
 	singletonlogger.Debug("[Acceptor] saving message into file")
 	var path string
 	msgJson, err := json.Marshal(msg)
@@ -158,6 +158,10 @@ func (a *AcceptorRole)saveIntoFile(msg Message) (err error) {
 		f, err = os.OpenFile(path, os.O_RDWR, 0644)
 		if err != nil {
 			singletonlogger.Debug(fmt.Sprintf("[Acceptor] errored on opening file %v", err))
+		}
+		err = os.Truncate(path, 0)
+		if err != nil {
+			singletonlogger.Debug(fmt.Sprintf("[Acceptor] errored on truncating file %v", err))
 		}
 	}
 	//defer f.Close()

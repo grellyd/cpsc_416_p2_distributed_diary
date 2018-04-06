@@ -169,7 +169,7 @@ func (pn *PaxosNode) SetInitialLog() (err error) {
 	for k, v := range pn.Neighbours {
 		// Create a temporary log to get filled by neighbour learners
 		temp := make([]Message, 0)
-		singletonlogger.Debug(fmt.Sprintf("[paxosnode] Making ReadFromLearner call to node %v\n", v))
+		//singletonlogger.Debug(fmt.Sprintf("[paxosnode] Making ReadFromLearner call to node %v\n", v))
 		e := v.Call("PaxosNodeRPCWrapper.ReadFromLearner", "placeholder", &temp)
 		if e != nil {
 			pn.RemoveFailedNeighbour(k)

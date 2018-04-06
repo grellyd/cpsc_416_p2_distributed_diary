@@ -55,14 +55,14 @@ func main() {
 	checkError(err)
 	err = singletonlogger.NewSingletonLogger("app", logstate)
 	checkError(err)
-	singletonlogger.Debug("[app] starting application at " + localAddr + " with outbound address " + outboundAddr)
+	singletonlogger.Debug("[LIB/APP] starting application at " + localAddr + " with outbound address " + outboundAddr)
 	client, err := consensuslib.NewClient(localAddr, outboundAddr, 1*time.Millisecond)
 	checkError(err)
-	singletonlogger.Debug("[app] created client at " + localAddr)
+	singletonlogger.Debug("[LIB/APP] created client at " + localAddr)
 	err = client.Connect(serverAddr)
 	checkError(err)
-	singletonlogger.Debug("[app] connected to server at " + serverAddr)
-	singletonlogger.Debug("[app] serving cli")
+	singletonlogger.Debug("[LIB/APP] connected to server at " + serverAddr)
+	singletonlogger.Debug("[LIB/APP] serving cli")
 	serveCli(client)
 }
 
