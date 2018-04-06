@@ -74,18 +74,18 @@ func serveCli(client *consensuslib.Client) {
 		case cli.ALIVE:
 			isAlive, err := client.IsAlive()
 			checkError(err)
-			singletonlogger.Info(fmt.Sprintf("[app] Alive: %v", isAlive))
+			singletonlogger.Info(fmt.Sprintf("Alive: %v", isAlive))
 		case cli.EXIT:
 			Exit()
 		case cli.READ:
 			value, err := client.Read()
 			checkError(err)
-			singletonlogger.Info(fmt.Sprintf("[app] Reading: \n%s", value))
+			singletonlogger.Info(fmt.Sprintf("Reading: \n%s", value))
 		case cli.WRITE:
 			if breaked  && !written{
 				written = true
 			} else if breaked && written {
-				singletonlogger.Info("[app] This client is at a breakpoint. Please 'continue' before writing again.")
+				singletonlogger.Info("This client is at a breakpoint. Please 'continue' before writing again.")
 				break
 			}
 			value := ""
