@@ -11,7 +11,7 @@ import (
 	"math/rand"
 )
 
-// Represents the length of message hash
+// MSGHASHLEN Represents the length of message hash
 const MSGHASHLEN  = 4
 
 
