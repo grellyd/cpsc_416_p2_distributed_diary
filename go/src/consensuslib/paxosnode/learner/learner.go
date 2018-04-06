@@ -5,9 +5,12 @@ import (
 	"consensuslib/errors"
 	"consensuslib/message"
 	"fmt"
+	//"consensuslib/synclog"
+	//"sync"
 )
 
 type Message = message.Message
+//type SyncLog = synclog.SyncLog
 
 type MessageAccepted struct {
 	M     *Message
@@ -15,10 +18,16 @@ type MessageAccepted struct {
 }
 
 type LearnerRole struct {
-	Accepted map[uint64]*MessageAccepted // variable for mapping the accepted messages to count
+	//Accepted map[uint64]*MessageAccepted // variable for mapping the accepted messages to count
+	Accepted *SyncLog
 	Log      []Message
 	CurrentRound int	// Should start at 0
 }
+
+/*type SyncLog struct {
+	sync.RWMutex
+	internal map[uint64]*MessageAccepted
+}*/
 
 type LearnerInterface interface {
 	// This method is used to set the initial log state when a PN joins
@@ -31,7 +40,9 @@ type LearnerInterface interface {
 }
 
 func NewLearner() LearnerRole {
-	learner := LearnerRole{ Accepted: make(map[uint64]*MessageAccepted, 0), Log: make([]Message, 0), CurrentRound: 0 }
+	//learner := LearnerRole{ Accepted: make(map[uint64]*MessageAccepted, 0), Log: make([]Message, 0), CurrentRound: 0 }
+	syncLog := NewSyncLog()
+	learner := LearnerRole{ Accepted: syncLog, Log: make([]Message, 0), CurrentRound: 0 }
 	return learner
 }
 
@@ -60,7 +71,7 @@ func (l *LearnerRole) GetLogValue(round int) (string, error) {
 	}
 }
 
-func (l *LearnerRole) NumAlreadyAccepted(m *Message) int {
+/*func (l *LearnerRole) NumAlreadyAccepted(m *Message) int {
 	if accepted, ok := l.Accepted[m.ID]; ok {
 		accepted.Times++
 	} else {
@@ -68,6 +79,15 @@ func (l *LearnerRole) NumAlreadyAccepted(m *Message) int {
 	}
 
 	return l.Accepted[m.ID].Times
+}*/
+func (l *LearnerRole) NumAlreadyAccepted(m *Message) int {
+	if accepted, ok := l.Accepted.Load(m.ID); ok {
+		accepted.Times++
+		return accepted.Times
+	} else {
+		l.Accepted.Store(m.ID, &MessageAccepted { m, 1 })
+		return 1
+	}
 }
 
 func (l *LearnerRole) LearnValue(m *Message) (newCurrentRoundIndex int, err error) {
@@ -103,3 +123,22 @@ func (l *LearnerRole) inLog(m *Message) bool {
 	}
 	return false
 }
+
+/*func (rm *SyncLog) Load(key uint64) (value *MessageAccepted, ok bool) {
+	rm.RLock()
+	result, ok := rm.internal[key]
+	rm.RUnlock()
+	return result, ok
+}
+
+func (rm *SyncLog) Delete(key uint64) {
+	rm.Lock()
+	delete(rm.internal, key)
+	rm.Unlock()
+}
+
+func (rm *SyncLog) Store(key uint64, value *MessageAccepted) {
+	rm.Lock()
+	rm.internal[key] = value
+	rm.Unlock()
+}*/
