@@ -1,3 +1,4 @@
+
 package learner
 
 import (
@@ -5,6 +6,7 @@ import (
 	"consensuslib/errors"
 	"consensuslib/message"
 	"fmt"
+	"paxostracker"
 	//"consensuslib/synclog"
 	//"sync"
 )
@@ -97,6 +99,7 @@ func (l *LearnerRole) LearnValue(m *Message) (newCurrentRoundIndex int, err erro
 
 		TODO: Do we want to auto-decrement in the learner, or should this be done elsewhere?
 	 */
+	paxostracker.Learn(uint64(newCurrentRoundIndex))
 	singletonlogger.Debug(fmt.Sprintf("[learner] Writing value'%v'to round %v", m.Value, l.CurrentRound))
 	if len(l.Log) > l.CurrentRound {
 		// Since Learner manages this state, this should theoretically never happen...
@@ -108,6 +111,7 @@ func (l *LearnerRole) LearnValue(m *Message) (newCurrentRoundIndex int, err erro
 		}
 		l.Log = append(l.Log, *m)
 		singletonlogger.Debug(fmt.Sprintf("[learner] Wrote value %v to log at index %v", l.Log[l.CurrentRound], l.CurrentRound))
+		paxostracker.Idle(l.Log[l.CurrentRound].Value)
 		l.CurrentRound++ // TODO: Once we have the concept of rounds
 		newInd := m.RoundNum+1
 		//return l.CurrentRound, nil

@@ -115,10 +115,6 @@ func (pn *PaxosNode) WriteToPaxosNode(value, msgHash string, ttl int) (success b
 	if b {
 		return b, e
 	}
-	// TODO: Move learn
-	paxostracker.Learn(uint64(numAccepted))
-
-	paxostracker.Idle(value)
 
 	return true, nil
 }
