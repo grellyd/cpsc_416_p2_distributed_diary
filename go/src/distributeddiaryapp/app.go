@@ -29,7 +29,7 @@ import (
 var validArgs = regexp.MustCompile("[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,5} [0-9]{1,5}( " + localFlag + ")*( " + debugFlag + ")*")
 var breaked bool
 var written bool
-var breakState string
+var breakState, killState string
 
 const (
 	serverAddrDefault = "127.0.0.1:12345"
@@ -124,6 +124,24 @@ func serveCli(client *consensuslib.Client) {
 			default:
 				singletonlogger.Error(fmt.Sprintf("Couldn't identify '%s'", breakState))
 				breaked = false
+			}
+		case cli.KILL:
+			data := *command.Data
+			killState = data[0]
+			singletonlogger.Info("Killing before next " + killState)
+			switch killState {
+			case cli.Prepare:
+				go paxostracker.KillNextPrepare()
+			case cli.Propose:
+				go paxostracker.KillNextPropose()
+			case cli.Learn:
+				go paxostracker.KillNextLearn()
+			case cli.Idle:
+				go paxostracker.KillNextIdle()
+			case cli.Custom:
+				go paxostracker.KillNextCustom()
+			default:
+				singletonlogger.Error(fmt.Sprintf("Couldn't identify '%s'", killState))
 			}
 		case cli.CONTINUE:
 			breaked = false

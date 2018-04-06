@@ -5,6 +5,7 @@ import (
 	"paxostracker/state"
 	"paxostracker/errors"
 	"fmt"
+	"os"
 )
 
 /*
@@ -31,6 +32,11 @@ var proposeBreak chan struct{}
 var learnBreak chan struct{}
 var idleBreak chan struct{}
 var customBreak chan struct{}
+var prepareKill chan struct{}
+var proposeKill chan struct{}
+var learnKill chan struct{}
+var idleKill chan struct{}
+var customKill chan struct{}
 var continuePaxos chan struct{}
 
 // NewPaxosTracker creates a new tracker
@@ -43,6 +49,11 @@ func NewPaxosTracker() (err error) {
 	learnBreak = make(chan struct{})
 	idleBreak = make(chan struct{}) 
 	customBreak = make(chan struct{})
+	prepareKill = make(chan struct{})
+	proposeKill = make(chan struct{})
+	learnKill = make(chan struct{})
+	idleKill = make(chan struct{}) 
+	customKill = make(chan struct{})
 	continuePaxos = make(chan struct{})
 	return nil
 }
@@ -61,6 +72,9 @@ func Prepare(callerAddr string) error {
 		// blocks until continue channel is filled
 		<- continuePaxos
 		singletonlogger.Debug("[paxostracker] continuing...")
+	case <- prepareKill:
+		singletonlogger.Debug("[paxostracker] killing roughly at prepare...")
+		os.Exit(1)
 	default:
 	}
 	switch tracker.currentState {
@@ -88,6 +102,9 @@ func Propose(acceptedPrep uint64) error {
 		// blocks until continue channel is filled
 		<- continuePaxos
 		singletonlogger.Debug("[paxostracker] continuing...")
+	case <- proposeKill:
+		singletonlogger.Debug("[paxostracker] killing roughly at propose...")
+		os.Exit(1)
 	default:
 	}
 	
@@ -114,6 +131,9 @@ func Learn(acceptedProp uint64) error {
 		// blocks until continue channel is filled
 		<- continuePaxos
 		singletonlogger.Debug("[paxostracker] continuing...")
+	case <- learnKill:
+		singletonlogger.Debug("[paxostracker] killing roughly at learn...")
+		os.Exit(1)
 	default:
 	}
 	
@@ -140,6 +160,9 @@ func Idle(finalValue string) error {
 		// blocks until continue channel is filled
 		<- continuePaxos
 		singletonlogger.Debug("[paxostracker] continuing...")
+	case <- idleKill:
+		singletonlogger.Debug("[paxostracker] killing roughly at idle...")
+		os.Exit(1)
 	default:
 	}
 
@@ -170,6 +193,9 @@ func Custom() error {
 		singletonlogger.Debug("[paxostracker] blocking before custom")
 		<- continuePaxos
 		singletonlogger.Debug("[paxostracker] continuing...")
+	case <- customKill:
+		singletonlogger.Debug("[paxostracker] killing roughly at custom...")
+		os.Exit(1)
 	default:
 	}
 	return nil
@@ -231,6 +257,42 @@ func BreakNextCustom() error {
 func Continue() error {
 	singletonlogger.Debug("[paxostracker] Filling continue channel for next round")
 	continuePaxos <- struct{}{}
+	return nil
+}
+
+
+// KillNextPrepare will block on the next prepare call till continue
+func KillNextPrepare() error {
+	singletonlogger.Debug("[paxostracker] Filling preparebreak channel for next round")
+	prepareKill <- struct{}{}
+	return nil
+}
+
+// KillNextPropose will block on the next propose call till continue
+func KillNextPropose() error {
+	singletonlogger.Debug("[paxostracker] Filling proposebreak channel for next round")
+	proposeKill <- struct{}{}
+	return nil
+}
+
+// KillNextLearn will block on the next learn call till continue
+func KillNextLearn() error {
+	singletonlogger.Debug("[paxostracker] Filling learnbreak channel for next round")
+	learnKill <- struct{}{}
+	return nil
+}
+
+// KillNextIdle will block on the next idle call till continue
+func KillNextIdle() error {
+	singletonlogger.Debug("[paxostracker] Filling idleKill channel for next round")
+	idleKill <- struct{}{}
+	return nil
+}
+
+// KillNextCustom will block on the next custom call till continue
+func KillNextCustom() error {
+	singletonlogger.Debug("[paxostracker] Filling customKill channel for next round")
+	customKill <- struct{}{}
 	return nil
 }
 

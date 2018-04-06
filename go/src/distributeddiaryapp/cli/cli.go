@@ -25,6 +25,7 @@ const (
 	BREAK = "break"
 	CONTINUE = "continue"
 	STEP = "step"
+	KILL = "kill"
 )
 
 // Breaks
@@ -36,7 +37,7 @@ const (
 	Custom = "custom"
 )
 
-var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit|rounds|break (prepare|propose|learn|idle|custom)|continue|step)")
+var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit|rounds|(break|kill) (prepare|propose|learn|idle|custom)|continue|step)")
 
 var helpString = `
 ===========================================
@@ -72,6 +73,10 @@ break [prepare|propose|learn|idle|custom]
 ----------------------------------
 - break the client's execution at the selected stage for the next round until 'continue' is called
 
+kill [prepare|propose|learn|idle|custom]
+----------------------------------
+- kill the client's execution at the selected stage. Exits roughly with os.Exit(1).
+
 continue
 --------
 - continue the round
@@ -102,6 +107,9 @@ func Run() (cmd Command) {
 			case 'b':
 				when := strings.Split(command[0], " ")[1:]
 				return Command{BREAK, &when}
+			case 'k':
+				when := strings.Split(command[0], " ")[1:]
+				return Command{KILL, &when}
 			default:
 				switch command[0] {
 				case ALIVE:
