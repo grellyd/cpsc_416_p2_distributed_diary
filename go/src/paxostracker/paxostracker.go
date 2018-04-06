@@ -57,8 +57,10 @@ func Prepare(callerAddr string) error {
 
 	select {
 	case <- prepareBreak:
+		singletonlogger.Debug("[paxostracker] blocking before prepare")
 		// blocks until continue channel is filled
 		<- continuePaxos
+		singletonlogger.Debug("[paxostracker] continuing...")
 	default:
 	}
 	switch tracker.currentState {
@@ -82,8 +84,10 @@ func Propose(acceptedPrep uint64) error {
 
 	select {
 	case <- proposeBreak:
+		singletonlogger.Debug("[paxostracker] blocking before propose")
 		// blocks until continue channel is filled
 		<- continuePaxos
+		singletonlogger.Debug("[paxostracker] continuing...")
 	default:
 	}
 	
@@ -106,8 +110,10 @@ func Learn(acceptedProp uint64) error {
 
 	select {
 	case <- learnBreak:
+		singletonlogger.Debug("[paxostracker] blocking before learn")
 		// blocks until continue channel is filled
 		<- continuePaxos
+		singletonlogger.Debug("[paxostracker] continuing...")
 	default:
 	}
 	
@@ -130,8 +136,10 @@ func Idle(finalValue string) error {
 	
 	select {
 	case <- idleBreak:
+		singletonlogger.Debug("[paxostracker] blocking before idle")
 		// blocks until continue channel is filled
 		<- continuePaxos
+		singletonlogger.Debug("[paxostracker] continuing...")
 	default:
 	}
 
@@ -159,7 +167,9 @@ func Custom() error {
 	}
 	select {
 	case <- customBreak:
+		singletonlogger.Debug("[paxostracker] blocking before custom")
 		<- continuePaxos
+		singletonlogger.Debug("[paxostracker] continuing...")
 	default:
 	}
 	return nil
@@ -184,36 +194,42 @@ func Error(reason string) error {
 
 // BreakNextPrepare will block on the next prepare call till continue
 func BreakNextPrepare() error {
+	singletonlogger.Debug("[paxostracker] Filling preparebreak channel for next round")
 	prepareBreak <- struct{}{}
 	return nil
 }
 
 // BreakNextPropose will block on the next propose call till continue
 func BreakNextPropose() error {
+	singletonlogger.Debug("[paxostracker] Filling proposebreak channel for next round")
 	proposeBreak <- struct{}{}
 	return nil
 }
 
 // BreakNextLearn will block on the next learn call till continue
 func BreakNextLearn() error {
+	singletonlogger.Debug("[paxostracker] Filling learnbreak channel for next round")
 	learnBreak <- struct{}{}
 	return nil
 }
 
 // BreakNextIdle will block on the next idle call till continue
 func BreakNextIdle() error {
+	singletonlogger.Debug("[paxostracker] Filling idleBreak channel for next round")
 	idleBreak <- struct{}{}
 	return nil
 }
 
 // BreakNextCustom will block on the next custom call till continue
 func BreakNextCustom() error {
+	singletonlogger.Debug("[paxostracker] Filling customBreak channel for next round")
 	customBreak <- struct{}{}
 	return nil
 }
 
 // Continue the execution of paxos
 func Continue() error {
+	singletonlogger.Debug("[paxostracker] Filling continue channel for next round")
 	continuePaxos <- struct{}{}
 	return nil
 }
