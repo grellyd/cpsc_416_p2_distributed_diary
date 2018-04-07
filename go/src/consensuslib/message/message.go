@@ -23,6 +23,7 @@ type Message struct {
 	Bounces		   int	   // TTL for the message
 }
 
+// generates a new message
 func NewMessage(id uint64, msgHash string, msgType MsgType, val string, pid string, roundNum, ttl int) Message {
 	m := Message{
 		id,
@@ -36,8 +37,8 @@ func NewMessage(id uint64, msgHash string, msgType MsgType, val string, pid stri
 	return m
 }
 
+// checks whether or not messages are equal based on the unique hash
 func (m *Message) Equals(m1 *Message) bool {
-	//if m.ID == m1.ID && m.Value == m1.Value {
 	if m.MsgHash == m1.MsgHash{
 		return true
 	}

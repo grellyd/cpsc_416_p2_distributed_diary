@@ -139,12 +139,9 @@ func (c *Client) IsAlive() (alive bool, err error) {
 	return alive, err
 }
 
-// TODO: use error log and continue
-
 // SendHeartbeats to the server
 func (c *Client) SendHeartbeats() (err error) {
 	for _ = range time.Tick(c.heartbeatRate) {
-		// TODO: Check ignored
 		var ignored bool
 		err = c.serverRPCClient.Call("Server.HeartBeat", c.outboundAddr, &ignored)
 		if err != nil {
