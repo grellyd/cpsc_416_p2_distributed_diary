@@ -1,0 +1,94 @@
+Testing Playbook
+===============
+Enter the commands as shown.
+Let CN be Client N.
+Let S be the server.
+
+Let the following be a command on CN:
+CN>[DD]: $command
+
+Let the following be output to check for:
+CHECK: $output
+
+--------------
+Failure Cases:
+--------------
+
+1. PN fails while it is idle. It has not sent out any prepare request or accepted any other prepare requests
+Solution: Other PNs remain at “waiting” state. No other PNs are affected by the failure of a particular PN in this state. Other PNs may continue to send out proposals.
+
+Start S,C1,C2,C3
+C1>[DD]: write hello
+C2>[DD]: write world
+CHECK: Read all is the same
+
+C1>[DD]: exit
+
+CHECK: Read all is the same
+
+2. PN fails after it has sent out a prepare request
+Solution: For PNs that sent back a promise for this prepare request, it will time out waiting for an accept request. Eventually, these PNs will promise another prepare request with a higher proposal number.
+
+Start S,C1,C2,C3
+C1>[DD]: write hello
+C2>[DD]: write world
+CHECK: Read all is the same
+
+C1>[DD]: kill propose
+C1>[DD]: write bye
+
+CHECK: C2 and C3 do not see 'bye' in their logs. --debug should show the
+receipt of the prepare message
+
+3. PN fails after it has sent out a prepare request, received a majority of positive responses back, and sent out an accept request.
+Solution: Our system is still able to learn about the consensus value because each PN’s acceptor will  send the accepted value to every PN’s learner. Each learner will count the number of acceptances it has received and it will write the value to the log once it has reached a majority
+
+Start S,C1,C2,C3
+C1>[DD]: write hello
+C2>[DD]: write world
+CHECK: Read all is the same
+
+C1>[DD]: kill learn
+C1>[DD]: write bye
+
+CHECK: C2 and C3 do see 'bye' in their logs. --debug should show the
+receipt of the prepare message, and the proposal.
+
+4. The last PN leaves the network
+Solution: The distributed log in our system is only maintained if there is at least one PN in the network. When the last PN leaves the network, any state of the log is lost, and the log will restart upon a new PN connects.
+
+Start S,C1,C2,C3
+C1>[DD]: write hello
+C2>[DD]: write world
+CHECK: Read all is the same
+
+C1>[DD]: exit
+C2>[DD]: exit
+C3>[DD]: exit
+
+Restart C1
+
+C1>[DD]: read
+
+CHECK: read is empty
+
+5. A majority of PNs fail during a Paxos round
+Solution: The system ends the current Paxos round right away, each PN will remove the failed PNs from its list of neighbours, and the system proceeds to the next Paxos round. Majority threshold is updated given the remaining PNs alive in the system.
+
+Start S,C1,C2,C3, C4
+C1>[DD]: write hello
+C2>[DD]: write world
+CHECK: Read all is the same
+
+C1>[DD]: break propose
+C1>[DD]: write bye
+
+CHECK: Read on all does not include 'bye'
+
+C2>[DD]: exit
+C3>[DD]: exit
+C1>[DD]: continue
+
+CHECK: C1 and C4 do see 'bye' in their logs. --debug should show the original
+round failure with four nodes, and then the restart of the round with two
+nodes, which reaches a majority.
