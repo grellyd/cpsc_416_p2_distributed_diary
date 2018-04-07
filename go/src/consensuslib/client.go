@@ -70,12 +70,15 @@ func NewClient(localAddr string, outboundAddr string, heartbeatRate time.Duratio
 	return client, nil
 }
 
-// Connect the client to the server
+// Connect the client to the server at serverAddr
 func (c *Client) Connect(serverAddr string) (err error) {
 	c.serverRPCClient, err = rpc.Dial("tcp", serverAddr)
 	if err != nil {
 		return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to connect to server: %s", err)
 	}
+
+	// Register outboundAddr with the server so the server can 1) receive heartbeats, and 2) inform neighbours about us
+	// The server will populate our neighbours field with our neighbours
 	singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#Connect: Registering to server at: %s\n", serverAddr))
 	err = c.serverRPCClient.Call("Server.Register", c.outboundAddr, &c.neighbors)
 	if err != nil {
@@ -83,9 +86,12 @@ func (c *Client) Connect(serverAddr string) (err error) {
 	}
 	go c.SendHeartbeats()
 
+	// For each neighbour received from the server, 1) set up a connection, and 2) Learn what log values they have.
+	// Then, choose the longest log received from the neighbours. Lastly, set up the round number the network is
+	// currently at.
 	if len(c.neighbors) > 0 {
 		singletonlogger.Debug(fmt.Sprintf("[LIB/CLIENT]#Connect: Neighbors: %v\n", c.neighbors))
-		err = c.paxosNode.SendNeighbours(c.neighbors)
+		err = c.paxosNode.BecomeNeighbours(c.neighbors)
 		if err != nil {
 			return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to connect to neighbors: %s", err)
 		}
@@ -96,8 +102,6 @@ func (c *Client) Connect(serverAddr string) (err error) {
 			rn := (log[len(log)-1].RoundNum) + 1
 			c.paxosNode.SetRoundNum(rn)
 		}
-		//c.paxosNode.SetRoundNum(len(c.paxosNode.Learner.Log))
-
 
 		if err != nil {
 			return fmt.Errorf("[LIB/CLIENT]#Connect: Unable to learn latest value while reading: %s", err)
@@ -106,7 +110,8 @@ func (c *Client) Connect(serverAddr string) (err error) {
 	return nil
 }
 
-// TODO: change to display nicely
+// Read the node's version of the log
+// It should be eventually consistent to the Paxos Network's agreed-upon version of the log.
 func (c *Client) Read() (value string, err error) {
 	log, err := c.paxosNode.GetLog()
 	if err != nil {
@@ -119,7 +124,7 @@ func (c *Client) Read() (value string, err error) {
 	return value, nil
 }
 
-// TODO: Check for error
+// Write to the shared log
 func (c *Client) Write(value string) (err error) {
 	paxostracker.Prepare(c.listener.Addr().String())
 	messageHash := generateMessageHash(MSGHASHLEN)

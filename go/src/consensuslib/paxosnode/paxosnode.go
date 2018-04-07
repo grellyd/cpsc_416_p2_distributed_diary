@@ -62,12 +62,6 @@ func NewPaxosNode(pnAddr string) (pn *PaxosNode, err error) {
 	return pn, err
 }
 
-// SendNeighbours is essentially an alias for BecomeNeighbors
-func (pn *PaxosNode) SendNeighbours(ips []string) (err error) {
-	err = pn.BecomeNeighbours(ips)
-	return err
-}
-
 // LearnLatestValueFromNeighbours is for the inital setup
 func (pn *PaxosNode) LearnLatestValueFromNeighbours() (err error) {
 	err = pn.SetInitialLog()
@@ -120,7 +114,7 @@ func (pn *PaxosNode) WriteToPaxosNode(value, msgHash string, ttl int) (success b
 	return true, nil
 }
 
-// BecomeNeighbours Sets up bidirectional RPC with all neighbours
+// BecomeNeighbours sets up bidirectional RPC with all neighbours
 func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 	for _, ip := range ips {
 		neighbourConn, err := rpc.Dial("tcp", ip)
@@ -144,7 +138,7 @@ func (pn *PaxosNode) BecomeNeighbours(ips []string) (err error) {
 	return nil
 }
 
-// SetInitialLog when a new node joins the network by conectacting all of its neighbours for their logs.
+// SetInitialLog when a new node joins the network by contacting all of its neighbours for their logs.
 // The new node will then set its initial log to be the longest log received from neighbours
 func (pn *PaxosNode) SetInitialLog() (err error) {
 	singletonlogger.Debug("[paxosnode] Setting the initial log for this new node")
@@ -159,14 +153,14 @@ func (pn *PaxosNode) SetInitialLog() (err error) {
 			pn.RemoveFailedNeighbour(k)
 			continue
 		}
-		if (len(temp) > maxLen) {
+		if len(temp) > maxLen {
 			maxLen = len(temp)
 			longestLog = temp
 		}
 	}
 	pn.Learner.InitializeLog(longestLog)
 
-	// setting new messageId to a newly joined node to accommodate the same PSN across PaxosNW
+	// Set a new messageId to a newly joined node to accommodate the same PSN across PaxosNW
 	logLen := len(longestLog)
 	if logLen != 0 {
 		newMsgID := longestLog[len(longestLog)-1].ID

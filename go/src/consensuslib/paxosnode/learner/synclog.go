@@ -6,8 +6,6 @@ import (
 	"sync"
 )
 
-//type MessageAccepted = learner.MessageAccepted
-
 type SyncLog struct {
 	sync.RWMutex
 	internal map[uint64]*MessageAccepted

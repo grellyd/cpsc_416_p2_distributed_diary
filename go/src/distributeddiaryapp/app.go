@@ -32,8 +32,6 @@ var written bool
 var breakState, killState string
 
 const (
-	serverAddrDefault = "127.0.0.1:12345"
-	localAddrDefault  = "127.0.0.1:0"
 	debugFlag         = "--debug"
 	localFlag         = "--local"
 	usage             = `==================================================
@@ -46,23 +44,32 @@ Server address must be of the form 255.255.255.255:12345
 Valid options:
 
 --local : run on local machine at 127.0.0.1 with the specified port
---debug : run with debuggging turned on for verbose logging
+--debug : run with debugging turned on for verbose logging
 `
 )
 
 func main() {
+	// Parse command line arguments
 	serverAddr, localAddr, outboundAddr, logstate, err := parseArgs(os.Args[1:])
 	checkError(err)
+
+	// Create our logger
 	err = singletonlogger.NewSingletonLogger("app", logstate)
 	checkError(err)
 	singletonlogger.Debug("[LIB/APP] starting application at " + localAddr + " with outbound address " + outboundAddr)
+
+	// Create a new ConsensusLib client
 	client, err := consensuslib.NewClient(localAddr, outboundAddr, 1*time.Millisecond)
 	checkError(err)
 	singletonlogger.Debug("[LIB/APP] created client at " + localAddr)
+
+	// Connect to the ConsensusLib server at serverAddr
 	err = client.Connect(serverAddr)
 	checkError(err)
 	singletonlogger.Debug("[LIB/APP] connected to server at " + serverAddr)
 	singletonlogger.Debug("[LIB/APP] serving cli")
+
+	// Serve the CLI interface to the Distributed Diary app
 	serveCli(client)
 }
 

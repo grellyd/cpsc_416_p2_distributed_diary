@@ -36,15 +36,21 @@ func NewAcceptor(id string) AcceptorRole {
 }
 
 type AcceptorInterface interface {
+	/**
+ 	 * This is the interface that the PaxosNode uses to talk to the Acceptor.
+	 **/
 
+	// Processes a prepare request for round roundNum that comes in the form of a Message
 	// REQUIRES: a message with the empty/nil/'' string as a value;
 	// EFFECTS: responds with the latest promised/accepted message or with the nil if none
-	ProcessPrepare(msg Message) Message
+	ProcessPrepare(msg Message, roundNum int) Message
 
+	// Processes an accept request for round roundNum that comes in the form of a Message
 	// REQUIRES: a message with a value submitted at proposer;
 	// EFFECTS: responds with the latest promised/accepted message or with the nil if none
-	ProcessAccept(msg Message) Message
+	ProcessAccept(msg Message, roundNum int) Message
 
+	//
 	// EFFECTS: returns the last accepted message if any
 	RestoreFromBackup(port string)
 }
