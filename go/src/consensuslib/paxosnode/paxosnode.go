@@ -16,6 +16,13 @@ import (
 	"math/rand"
 )
 
+/**
+ * PaxosNode implements the interface that the rest of the consensuslib talks to.
+ * It in turns make calls to internal the Learner, Acceptor, and Proposer roles.
+ *
+ *	See paxosnodeinterface.go for the public methods that it implements and their descriptions.
+ */
+
 // ProposerRole Type Alias
 type ProposerRole = proposer.ProposerRole
 // AcceptorRole Type Alias

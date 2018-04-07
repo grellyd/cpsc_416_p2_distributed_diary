@@ -5,12 +5,8 @@ import (
 	"consensuslib/message"
 	"encoding/json"
 	"fmt"
-	//"net"
 	"os"
-	//"strconv"
 	"io/ioutil"
-	"math/rand"
-	"time"
 )
 
 type Message = message.Message
@@ -22,10 +18,6 @@ type AcceptorRole struct {
 }
 
 func NewAcceptor(id string) AcceptorRole {
-	// since testing environment is on the same machine the id is generated
-	// for the production environment each machine has its separate space, so, naming is the same
-	//id := generateAcceptorID(6)  // for the testing environment
-	//id := "a"						// for the production environment
 	acc := AcceptorRole{
 		id,
 		Message{},
@@ -50,9 +42,8 @@ type AcceptorInterface interface {
 	// EFFECTS: responds with the latest promised/accepted message or with the nil if none
 	ProcessAccept(msg Message, roundNum int) Message
 
-	//
-	// EFFECTS: returns the last accepted message if any
-	RestoreFromBackup(port string)
+	// Reads the last accepted message from the backup file saved on the host machine
+	RestoreFromBackup()
 }
 
 func (acceptor *AcceptorRole) ProcessPrepare(msg Message, roundNum int) Message {
@@ -101,9 +92,6 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 
 }
 
-// TODO: since we're testing on the same machine use a port as a reference point
-// TODO: in the last version this method will have nothing, because we'll be running
-// code on different machines
 func (acceptor *AcceptorRole) RestoreFromBackup() {
 	singletonlogger.Debug("[Acceptor] restoring from backup")
 	path := "temp1/"+acceptor.ID + "prepare.json"
@@ -176,19 +164,22 @@ func (a *AcceptorRole)saveIntoFile(msg Message) (err error) {
 		singletonlogger.Debug(fmt.Sprintf("[Acceptor] errored on writing into file %v", err))
 	}
 	f.Close()
-	//singletonlogger.Debug("[Acceptor] saved message into file")
 	return err
 }
 
-func generateAcceptorID(n int) string {
-	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
-}
+/*
+ * Methods for demo
+ */
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
+//func generateAcceptorID(n int) string {
+//	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+//	b := make([]rune, n)
+//	for i := range b {
+//		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+//	}
+//	return string(b)
+//}
+
+//func init() {
+//	rand.Seed(time.Now().UnixNano())
+//}

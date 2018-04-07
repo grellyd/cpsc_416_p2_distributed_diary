@@ -16,17 +16,24 @@ type ProposerRole struct {
 }
 
 type ProposerInterface interface {
-	// The proposer chooses a new prepare request ID and creates a prepare request
-	// to return to the PN
-	CreatePrepareRequest(roundNum int) Message
+	/**
+     * This is the interface that the PaxosNode uses to talk to the Proposer.
+     **/
+
+	// Creates a new prepare request.
+	// The proposer will generate a new prepare request ID and message hash, and create a corresponding prepare request
+	// to return to the PN. TTL represents the # of times we will try to re-propose.
+	CreatePrepareRequest(roundNum int, msgHash string, ttl int) Message
+
 	// This creates an accept request with the current prepare request ID and a candidate value for consensus
 	// to return to the PN. The value passed in is either an arbitrary value of the application's choosing, or is
 	// the value corresponding to the highest prepare request ID contained in the permission granted messages from other
-	// acceptors
-	CreateAcceptRequest(value string, roundNum int) Message
+	// acceptors.
+	CreateAcceptRequest(value, msgHash string, roundNum int, ttl int) Message
+
 	// This is used by the PN to inform its proposer of the highest message ID value it has seen
 	// so far from other PNs. All future prepare requests must have a messageID greater than
-	// the messageID passed in
+	// the current messageID.
 	UpdateMessageID(messageID uint64)
 
 	// This method increments current Message ID by 1 to ensure all proposers in the NW has same PSN
