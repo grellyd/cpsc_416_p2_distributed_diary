@@ -47,7 +47,8 @@ type PaxosNode struct {
 // NewPaxosNode creates a Paxos Node that is linked to the client. The PN's Addr field is set as the pnAddr passed in
 func NewPaxosNode(pnAddr string) (pn *PaxosNode, err error) {
 	proposer := proposer.NewProposer(pnAddr)
-	acceptor := acceptor.NewAcceptor()
+	acceptorID := portRegex.FindString(pnAddr)
+	acceptor := acceptor.NewAcceptor(acceptorID)
 	learner := learner.NewLearner()
 	pn = &PaxosNode{
 		Addr:     pnAddr,

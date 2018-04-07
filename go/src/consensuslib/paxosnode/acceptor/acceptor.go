@@ -21,10 +21,10 @@ type AcceptorRole struct {
 	LastAccepted Message
 }
 
-func NewAcceptor() AcceptorRole {
+func NewAcceptor(id string) AcceptorRole {
 	// since testing environment is on the same machine the id is generated
 	// for the production environment each machine has its separate space, so, naming is the same
-	id := generateAcceptorID(6)  // for the testing environment
+	//id := generateAcceptorID(6)  // for the testing environment
 	//id := "a"						// for the production environment
 	acc := AcceptorRole{
 		id,
