@@ -12,8 +12,8 @@ The application can be run both on a local machine and on Azure with different V
 Let PORT be some valid free port number.
 
 To run the app locally:
-— Start server from src: go run distributeddiaryserver/server.go 12345 local
-- Start app from src: go run distributeddiaryapp/app.go 127.0.0.1:12345 PORT --local
+— Start server from go/src: go run distributeddiaryserver/server.go 12345 local
+- Start app from go/src: go run distributeddiaryapp/app.go 127.0.0.1:12345 PORT --local
 
 This will run server and apps at 127.0.0.1:PORT
 
@@ -28,6 +28,4 @@ This will run apps on machine's outbound IP on port PORT
 The performance logs are stored under src/logs
 To view the performance at real time add “--debug” in the end of the command that runs the app.
 
-Steps to reproduce the failure cases of section 2.4 of the final report are stored at src/failure_case_playbook.txt
-
-
+Steps to reproduce the failure cases of section 2.4 of the final report are stored at failure_case_playbook.txt
