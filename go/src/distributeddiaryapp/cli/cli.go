@@ -16,25 +16,25 @@ type Command struct {
 
 // Commands
 const (
-	ALIVE = "alive"
-	EXIT  = "exit"
-	READ  = "read"
-	WRITE = "write"
-	HELP  = "help"
-	ROUNDS = "rounds"
-	BREAK = "break"
+	ALIVE    = "alive"
+	EXIT     = "exit"
+	READ     = "read"
+	WRITE    = "write"
+	HELP     = "help"
+	ROUNDS   = "rounds"
+	BREAK    = "break"
 	CONTINUE = "continue"
-	STEP = "step"
-	KILL = "kill"
+	STEP     = "step"
+	KILL     = "kill"
 )
 
 // Breaks
 const (
 	Prepare = "prepare"
 	Propose = "propose"
-	Learn = "learn"
-	Idle = "idle"
-	Custom = "custom"
+	Learn   = "learn"
+	Idle    = "idle"
+	Custom  = "custom"
 )
 
 var validCommand = regexp.MustCompile("(alive|read|write ([0-9a-zA-Z ]*)?|help|exit|rounds|(break|kill) (prepare|propose|learn|idle|custom)|continue|step)")

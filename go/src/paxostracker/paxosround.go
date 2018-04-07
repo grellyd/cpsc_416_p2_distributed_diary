@@ -6,11 +6,11 @@ import (
 
 // PaxosRound is a round of paxos
 type PaxosRound struct {
-	InitialAddr string
+	InitialAddr         string
 	AcceptedPreparation uint64
-	AcceptedProposal uint64
-	Value string
-	ErrorReason string
+	AcceptedProposal    uint64
+	Value               string
+	ErrorReason         string
 }
 
 // AsRow converts a round to a string row

@@ -1,8 +1,8 @@
 package consensuslib
 
 import (
-	"filelogger/singletonlogger"
 	"consensuslib/errors"
+	"filelogger/singletonlogger"
 	"fmt"
 	"net"
 	"net/rpc"

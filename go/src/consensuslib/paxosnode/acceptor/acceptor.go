@@ -1,18 +1,18 @@
 package acceptor
 
 import (
-	"filelogger/singletonlogger"
 	"consensuslib/message"
 	"encoding/json"
+	"filelogger/singletonlogger"
 	"fmt"
-	"os"
 	"io/ioutil"
+	"os"
 )
 
 type Message = message.Message
 
 type AcceptorRole struct {
-	ID 			 string
+	ID           string
 	LastPromised Message
 	LastAccepted Message
 }
@@ -29,8 +29,8 @@ func NewAcceptor(id string) AcceptorRole {
 
 type AcceptorInterface interface {
 	/**
- 	 * This is the interface that the PaxosNode uses to talk to the Acceptor.
-	 **/
+	 	 * This is the interface that the PaxosNode uses to talk to the Acceptor.
+		 **/
 
 	// Processes a prepare request for round roundNum that comes in the form of a Message
 	// REQUIRES: a message with the empty/nil/'' string as a value;
@@ -53,9 +53,9 @@ func (acceptor *AcceptorRole) ProcessPrepare(msg Message, roundNum int) Message 
 	if &acceptor.LastPromised == nil ||
 		(msg.ID > acceptor.LastPromised.ID && roundNum >= acceptor.LastPromised.RoundNum) {
 		acceptor.LastPromised = msg
-	} else if msg.ID > acceptor.LastPromised.ID&&
+	} else if msg.ID > acceptor.LastPromised.ID &&
 		//acceptor.LastPromised.FromProposerID == msg.FromProposerID &&
-			acceptor.LastPromised.RoundNum == roundNum {
+		acceptor.LastPromised.RoundNum == roundNum {
 		acceptor.LastPromised = msg
 	}
 	singletonlogger.Debug(fmt.Sprintf("[Acceptor] promised id: %d, val: %s, round: %d \n", acceptor.LastPromised.ID, acceptor.LastPromised.Value, roundNum))
@@ -77,7 +77,7 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 	} else {
 		if msg.ID == acceptor.LastPromised.ID &&
 			//acceptor.LastPromised.FromProposerID == msg.FromProposerID &&
-				//acceptor.LastPromised.RoundNum == roundNum {
+			//acceptor.LastPromised.RoundNum == roundNum {
 			acceptor.LastPromised.MsgHash == msg.MsgHash {
 			acceptor.LastAccepted = msg
 		} else if (msg.ID > acceptor.LastPromised.ID && acceptor.LastPromised.RoundNum >= roundNum) ||
@@ -94,7 +94,7 @@ func (acceptor *AcceptorRole) ProcessAccept(msg Message, roundNum int) Message {
 
 func (acceptor *AcceptorRole) RestoreFromBackup() {
 	singletonlogger.Debug("[Acceptor] restoring from backup")
-	path := "temp1/"+acceptor.ID + "prepare.json"
+	path := "temp1/" + acceptor.ID + "prepare.json"
 	f, err := os.Open(path)
 	if err != nil {
 		singletonlogger.Debug(fmt.Sprintf("[Acceptor] no such file exist, no messages were promised %v", err))
@@ -106,7 +106,7 @@ func (acceptor *AcceptorRole) RestoreFromBackup() {
 		singletonlogger.Debug(fmt.Sprintf("[Acceptor] error on unmarshalling promise %v", err))
 	}
 	f.Close()
-	path = "temp1/"+acceptor.ID + "accept.json"
+	path = "temp1/" + acceptor.ID + "accept.json"
 	f, err = os.Open(path)
 	if err != nil {
 		singletonlogger.Debug(fmt.Sprintf("[Acceptor] no such file exist, no messages were accepted %v", err))
@@ -120,7 +120,7 @@ func (acceptor *AcceptorRole) RestoreFromBackup() {
 }
 
 // creates a log for acceptor in case of disconnection
-func (a *AcceptorRole)saveIntoFile(msg Message) (err error) {
+func (a *AcceptorRole) saveIntoFile(msg Message) (err error) {
 
 	singletonlogger.Debug("[Acceptor] saving message into file")
 	var path string
@@ -132,17 +132,17 @@ func (a *AcceptorRole)saveIntoFile(msg Message) (err error) {
 	var f *os.File
 	switch msg.Type {
 	case message.PREPARE:
-		path = "temp1/"+ a.ID + "prepare.json"
+		path = "temp1/" + a.ID + "prepare.json"
 		singletonlogger.Debug("[Acceptor] saved PREPARE to file")
 	case message.ACCEPT:
-		path = "temp1/"+ a.ID + "accept.json"
+		path = "temp1/" + a.ID + "accept.json"
 		singletonlogger.Debug("[Acceptor] saved ACCEPT to file")
 	}
 	if err != nil {
 		singletonlogger.Debug(fmt.Sprintf("[Acceptor] errored on reading path %v", err))
 	}
 	if _, erro := os.Stat(path); os.IsNotExist(erro) {
-		os.MkdirAll("temp1/", os.ModePerm);
+		os.MkdirAll("temp1/", os.ModePerm)
 		f, err = os.Create(path)
 		if err != nil {
 			singletonlogger.Debug(fmt.Sprintf("[Acceptor] errored on creating file %v", err))

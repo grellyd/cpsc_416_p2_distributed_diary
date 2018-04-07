@@ -3,17 +3,16 @@ package consensuslib
 import (
 	"consensuslib/paxosnode"
 	"filelogger/singletonlogger"
-	"paxostracker"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/rpc"
+	"paxostracker"
 	"time"
-	"math/rand"
 )
 
 // MSGHASHLEN Represents the length of message hash
-const MSGHASHLEN  = 4
-
+const MSGHASHLEN = 4
 
 // PaxosNodeRPCWrapper is the rpc wrapper around the paxos node
 type PaxosNodeRPCWrapper = paxosnode.PaxosNodeRPCWrapper

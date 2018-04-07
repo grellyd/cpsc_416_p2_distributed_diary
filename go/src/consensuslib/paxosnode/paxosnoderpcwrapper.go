@@ -4,8 +4,8 @@
 package paxosnode
 
 import (
-	"filelogger/singletonlogger"
 	"consensuslib/message"
+	"filelogger/singletonlogger"
 	"fmt"
 )
 
@@ -66,15 +66,14 @@ func (p *PaxosNodeRPCWrapper) ReadFromLearner(placeholder string, log *[]Message
 
 // RPC to notify a PN that majority failed and needs to be recalibrated
 // makes a call to a node to clean failed neighbours
-func (p *PaxosNodeRPCWrapper) CleanYourNeighbours (neighbour string, b *bool) (err error) {
+func (p *PaxosNodeRPCWrapper) CleanYourNeighbours(neighbour string, b *bool) (err error) {
 	singletonlogger.Debug(fmt.Sprintf("[paxosnodewrapper] cleaning request from %s", neighbour))
 	*b = p.paxosNode.CleanNbrsOnRequest(neighbour)
 	return nil
 }
 
 // RPC that asks a PN whether it still alive
-func (p *PaxosNodeRPCWrapper) RUAlive (placeholder string, b *bool) (err error) {
+func (p *PaxosNodeRPCWrapper) RUAlive(placeholder string, b *bool) (err error) {
 	*b = true
 	return nil
 }
-

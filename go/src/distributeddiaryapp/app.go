@@ -32,9 +32,9 @@ var written bool
 var breakState, killState string
 
 const (
-	debugFlag         = "--debug"
-	localFlag         = "--local"
-	usage             = `==================================================
+	debugFlag = "--debug"
+	localFlag = "--local"
+	usage     = `==================================================
 The Chamber of Secrets: A Distributed Diary App
 ==================================================
 Usage: go run app.go serverAddress PORT [options]
@@ -89,7 +89,7 @@ func serveCli(client *consensuslib.Client) {
 			checkError(err)
 			singletonlogger.Info(fmt.Sprintf("Reading: \n%s", value))
 		case cli.WRITE:
-			if breaked  && !written{
+			if breaked && !written {
 				written = true
 			} else if breaked && written {
 				singletonlogger.Info("This client is at a breakpoint. Please 'continue' before writing again.")
@@ -106,7 +106,7 @@ func serveCli(client *consensuslib.Client) {
 			}
 			go client.Write(value)
 		case cli.BREAK:
-			if breaked  && !written{
+			if breaked && !written {
 				singletonlogger.Info("This client is ready to hit a breakpoint. Please 'continue' before pausing again.")
 				break
 			} else if breaked && written {

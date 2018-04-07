@@ -7,7 +7,7 @@ const (
 	// Idle is not in a round
 	Idle PaxosState = "Idle"
 
-	// Active States 
+	// Active States
 	// 	Happy Path: Idle -> Preparing -> Proposing -> Learning -> Idle
 
 	// Preparing is while disseminating out the prepare request

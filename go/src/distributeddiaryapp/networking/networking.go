@@ -2,8 +2,8 @@ package networking
 
 import (
 	"fmt"
-	"strings"
 	"os/exec"
+	"strings"
 )
 
 // GetOutboundIP Returns a machine's public (outbound) Azure IP address e.g. "270.0.21.1"
@@ -17,4 +17,3 @@ func GetOutboundIP() (ipString string, err error) {
 	result := fmt.Sprintf("%s", out)
 	return strings.TrimSpace(result), nil
 }
-

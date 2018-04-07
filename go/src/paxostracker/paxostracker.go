@@ -2,15 +2,15 @@ package paxostracker
 
 import (
 	"filelogger/singletonlogger"
-	"paxostracker/state"
-	"paxostracker/errors"
 	"fmt"
 	"os"
+	"paxostracker/errors"
+	"paxostracker/state"
 )
 
 /*
 PaxosTracker is a global singleton instantiated per consensuslib client instance to track the state.
-Paxostracker uses a DFA representation of the paxos process, and is activated by the consensuslib as it changes state. 
+Paxostracker uses a DFA representation of the paxos process, and is activated by the consensuslib as it changes state.
 The paxostracker can output the current state at any time.
 The paxostracker can add a wait before the next stage activation.
 Each transition function call will return either nil or error.
@@ -42,22 +42,21 @@ var continuePaxos chan struct{}
 // NewPaxosTracker creates a new tracker
 func NewPaxosTracker() (err error) {
 	tracker = &PaxosTracker{
-			currentState: state.Idle,
+		currentState: state.Idle,
 	}
 	prepareBreak = make(chan struct{})
 	proposeBreak = make(chan struct{})
 	learnBreak = make(chan struct{})
-	idleBreak = make(chan struct{}) 
+	idleBreak = make(chan struct{})
 	customBreak = make(chan struct{})
 	prepareKill = make(chan struct{})
 	proposeKill = make(chan struct{})
 	learnKill = make(chan struct{})
-	idleKill = make(chan struct{}) 
+	idleKill = make(chan struct{})
 	customKill = make(chan struct{})
 	continuePaxos = make(chan struct{})
 	return nil
 }
-
 
 // Prepare request
 func Prepare(callerAddr string) error {
@@ -67,12 +66,12 @@ func Prepare(callerAddr string) error {
 	}
 
 	select {
-	case <- prepareBreak:
+	case <-prepareBreak:
 		singletonlogger.Debug("[paxostracker] blocking before prepare")
 		// blocks until continue channel is filled
-		<- continuePaxos
+		<-continuePaxos
 		singletonlogger.Debug("[paxostracker] continuing...")
-	case <- prepareKill:
+	case <-prepareKill:
 		singletonlogger.Debug("[paxostracker] killing roughly at prepare...")
 		os.Exit(1)
 	default:
@@ -97,17 +96,17 @@ func Propose(acceptedPrep uint64) error {
 	}
 
 	select {
-	case <- proposeBreak:
+	case <-proposeBreak:
 		singletonlogger.Debug("[paxostracker] blocking before propose")
 		// blocks until continue channel is filled
-		<- continuePaxos
+		<-continuePaxos
 		singletonlogger.Debug("[paxostracker] continuing...")
-	case <- proposeKill:
+	case <-proposeKill:
 		singletonlogger.Debug("[paxostracker] killing roughly at propose...")
 		os.Exit(1)
 	default:
 	}
-	
+
 	switch tracker.currentState {
 	case state.Preparing:
 	default:
@@ -126,17 +125,17 @@ func Learn(acceptedProp uint64) error {
 	}
 
 	select {
-	case <- learnBreak:
+	case <-learnBreak:
 		singletonlogger.Debug("[paxostracker] blocking before learn")
 		// blocks until continue channel is filled
-		<- continuePaxos
+		<-continuePaxos
 		singletonlogger.Debug("[paxostracker] continuing...")
-	case <- learnKill:
+	case <-learnKill:
 		singletonlogger.Debug("[paxostracker] killing roughly at learn...")
 		os.Exit(1)
 	default:
 	}
-	
+
 	switch tracker.currentState {
 	case state.Proposing:
 	default:
@@ -153,14 +152,14 @@ func Idle(finalValue string) error {
 		singletonlogger.Error("Error: PaxosTracker Uninitialised")
 		return nil
 	}
-	
+
 	select {
-	case <- idleBreak:
+	case <-idleBreak:
 		singletonlogger.Debug("[paxostracker] blocking before idle")
 		// blocks until continue channel is filled
-		<- continuePaxos
+		<-continuePaxos
 		singletonlogger.Debug("[paxostracker] continuing...")
-	case <- idleKill:
+	case <-idleKill:
 		singletonlogger.Debug("[paxostracker] killing roughly at idle...")
 		os.Exit(1)
 	default:
@@ -189,18 +188,17 @@ func Custom() error {
 		return nil
 	}
 	select {
-	case <- customBreak:
+	case <-customBreak:
 		singletonlogger.Debug("[paxostracker] blocking before custom")
-		<- continuePaxos
+		<-continuePaxos
 		singletonlogger.Debug("[paxostracker] continuing...")
-	case <- customKill:
+	case <-customKill:
 		singletonlogger.Debug("[paxostracker] killing roughly at custom...")
 		os.Exit(1)
 	default:
 	}
 	return nil
 }
-	
 
 // Error transition
 func Error(reason string) error {
@@ -260,7 +258,6 @@ func Continue() error {
 	return nil
 }
 
-
 // KillNextPrepare will block on the next prepare call till continue
 func KillNextPrepare() error {
 	singletonlogger.Debug("[paxostracker] Filling preparebreak channel for next round")
@@ -299,7 +296,7 @@ func KillNextCustom() error {
 // AsTable returns the current state of the paxos process in human consumable table form.
 func AsTable() string {
 	rows := "| Initial Addr | AcceptedPrepare | AcceptedProposal | Value |\n"
-	for _, round := range(completedRounds) {
+	for _, round := range completedRounds {
 		rows += round.AsRow()
 	}
 	var pstate state.PaxosState

@@ -1,8 +1,8 @@
 package proposer
 
 import (
-	"filelogger/singletonlogger"
 	"consensuslib/message"
+	"filelogger/singletonlogger"
 	"fmt"
 )
 
@@ -17,8 +17,8 @@ type ProposerRole struct {
 
 type ProposerInterface interface {
 	/**
-     * This is the interface that the PaxosNode uses to talk to the Proposer.
-     **/
+	 * This is the interface that the PaxosNode uses to talk to the Proposer.
+	 **/
 
 	// Creates a new prepare request.
 	// The proposer will generate a new prepare request ID and message hash, and create a corresponding prepare request
@@ -63,7 +63,7 @@ func (proposer *ProposerRole) CreateAcceptRequest(value, msgHash string, roundNu
 		FromProposerID: proposer.proposerID,
 		RoundNum:		roundNum,
 	}*/
-	acceptRequest := message.NewMessage(proposer.messageID, msgHash, message.ACCEPT, value, proposer.proposerID,roundNum, ttl)
+	acceptRequest := message.NewMessage(proposer.messageID, msgHash, message.ACCEPT, value, proposer.proposerID, roundNum, ttl)
 	return acceptRequest
 }
 

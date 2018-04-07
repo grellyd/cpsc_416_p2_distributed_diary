@@ -7,13 +7,13 @@ import (
 	"consensuslib/paxosnode/learner"
 	"consensuslib/paxosnode/proposer"
 	"filelogger/singletonlogger"
-	"paxostracker"
 	"fmt"
+	"math/rand"
 	"net/rpc"
-	"time"
+	"paxostracker"
 	"regexp"
 	"sync"
-	"math/rand"
+	"time"
 )
 
 /**
@@ -25,30 +25,34 @@ import (
 
 // ProposerRole Type Alias
 type ProposerRole = proposer.ProposerRole
+
 // AcceptorRole Type Alias
 type AcceptorRole = acceptor.AcceptorRole
+
 // LearnerRole Type Alias
 type LearnerRole = learner.LearnerRole
 
 var portRegex = regexp.MustCompile(":([0-9])+")
 
 // TIMER for timeouts
-const TIMER  = 5*time.Second
+const TIMER = 5 * time.Second
+
 // RANDOFFSET where pick a number from 0 to RANDOFFSET to sleep between next proposals
 const RANDOFFSET = 3
+
 // TTL for message
 const TTL = 3
 
 // PaxosNode struct
 type PaxosNode struct {
-	Addr       string // IP:port, identifier
-	Proposer   ProposerRole
-	Acceptor   AcceptorRole
-	Learner    LearnerRole
-	NbrAddrs   []string
-	Neighbours map[string]*rpc.Client
+	Addr             string // IP:port, identifier
+	Proposer         ProposerRole
+	Acceptor         AcceptorRole
+	Learner          LearnerRole
+	NbrAddrs         []string
+	Neighbours       map[string]*rpc.Client
 	FailedNeighbours []string
-	RoundNum	 int
+	RoundNum         int
 }
 
 // NewPaxosNode creates a Paxos Node that is linked to the client. The PN's Addr field is set as the pnAddr passed in
@@ -113,7 +117,7 @@ func (pn *PaxosNode) WriteToPaxosNode(value, msgHash string, ttl int) (success b
 	}
 	singletonlogger.Debug(fmt.Sprintf("[paxosnode] Accepted %v", numAccepted))
 	// If majority is not reached, sleep for a while and try again
-	b, e = pn.ShouldRetry(numAccepted,value, &accReq)
+	b, e = pn.ShouldRetry(numAccepted, value, &accReq)
 	if b {
 		return b, e
 	}
@@ -223,7 +227,7 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 		timer := time.NewTimer(TIMER)
 		defer timer.Stop()
 		go func() {
-			<- timer.C
+			<-timer.C
 		}()
 
 		nghbrNum := len(pn.Neighbours)
@@ -248,29 +252,28 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 				var respReq Message
 				singletonlogger.Debug(fmt.Sprintf("[paxosnode] disseminating to neighbour inside %v and RPC %v", k, v))
 				errQueue <- v.Call("PaxosNodeRPCWrapper.ProcessPrepareRequest", prepReq, &respReq)
-				c<-respReq
+				c <- respReq
 				select {
-				case err := <- errQueue:
+				case err := <-errQueue:
 					singletonlogger.Debug("[paxosnode] channel worked on PREPARE")
 					if err != nil {
 						pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 						singletonlogger.Debug(fmt.Sprintf("[paxosnode] on PREPARE RPC failed %v", k))
 					} else {
-						req := <- c
+						req := <-c
 						if prepReq.Equals(&req) {
 							numAccepted++
 							singletonlogger.Debug(fmt.Sprintf("[paxosnode] on PREPARE RPC succeded %v numPledged: %v, ID: %v", req.FromProposerID, numAccepted, req.ID))
 						}
 					}
-				case <- time.After(TIMER):
+				case <-time.After(TIMER):
 					pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 				}
 			}(v, k)
 
-
 		}
 		wg.Wait()
-		if len(pn.FailedNeighbours) >= len(pn.Neighbours)/2 && len(pn.FailedNeighbours) != 0{
+		if len(pn.FailedNeighbours) >= len(pn.Neighbours)/2 && len(pn.FailedNeighbours) != 0 {
 			singletonlogger.Debug(fmt.Sprintf("[paxosnode] checking failed nbrs %v", len(pn.FailedNeighbours)))
 			return numAccepted, nil
 		}
@@ -300,21 +303,21 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 				var respReq Message
 				singletonlogger.Debug(fmt.Sprintf("[paxosnode] disseminating ACCEPT to neighbour %v", k))
 				errQueue <- v.Call("PaxosNodeRPCWrapper.ProcessAcceptRequest", prepReq, &respReq)
-				c<-respReq
+				c <- respReq
 				select {
-				case err := <- errQueue:
+				case err := <-errQueue:
 					singletonlogger.Debug("[paxosnode] channel worked on ACCEPT")
 					if err != nil {
 						pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 						singletonlogger.Debug(fmt.Sprintf("[paxosnode] on ACCEPT RPC failed %v", k))
 					} else {
-						req := <- c
+						req := <-c
 						if prepReq.Equals(&req) {
 							numAccepted++
 							singletonlogger.Debug(fmt.Sprintf("[paxosnode] on ACCEPT RPC succeded %v numAccepted: %vID: %v", req.FromProposerID, numAccepted, req.ID))
 						}
 					}
-				case <- time.After(TIMER):
+				case <-time.After(TIMER):
 					pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 				}
 			}(k, v)
@@ -327,7 +330,6 @@ func (pn *PaxosNode) DisseminateRequest(prepReq Message) (numAccepted int, err e
 			pn.RoundNum++
 			return numAccepted, nil
 		}
-
 
 		return numAccepted, nil
 
@@ -383,7 +385,7 @@ func (pn *PaxosNode) ShouldRetry(numAccepted int, value string, m *Message) (b b
 		if m.Bounces == 0 {
 			randOffset := time.Duration(rand.Intn(RANDOFFSET))
 			singletonlogger.Debug(fmt.Sprintf("[paxosnode] sleeping for %v", randOffset))
-			time.Sleep(randOffset*time.Second)
+			time.Sleep(randOffset * time.Second)
 			m.Bounces = TTL
 		}
 		// Before retrying, we must clear the failed neighbours
@@ -422,7 +424,7 @@ func (pn *PaxosNode) RemoveNbrAddr(ip string) {
 }
 
 // NotifyOfMajorityFailure helper
-func (pn *PaxosNode) NotifyOfMajorityFailure () {
+func (pn *PaxosNode) NotifyOfMajorityFailure() {
 	nghbrNum := len(pn.Neighbours)
 	var wg sync.WaitGroup
 	wg.Add(nghbrNum)
@@ -437,13 +439,13 @@ func (pn *PaxosNode) NotifyOfMajorityFailure () {
 			c <- b
 
 			select {
-			case err := <- errQueue:
+			case err := <-errQueue:
 				singletonlogger.Debug("[paxosnode] channel worked on MAJOR FAILURE")
 				if err != nil {
 					pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 					singletonlogger.Debug(fmt.Sprintf("[paxosnode] on MAJOR FAILURE RPC failed %v", k))
 				}
-			case <- time.After(TIMER):
+			case <-time.After(TIMER):
 				pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 			}
 		}(k, v)
@@ -454,7 +456,7 @@ func (pn *PaxosNode) NotifyOfMajorityFailure () {
 
 // CleanNbrsOnRequest to remove neighbours when requested
 func (pn *PaxosNode) CleanNbrsOnRequest(neighbour string) (b bool) {
-	nghbrNum := len(pn.Neighbours)-1
+	nghbrNum := len(pn.Neighbours) - 1
 	var wg sync.WaitGroup
 	wg.Add(nghbrNum)
 	c := make(chan bool, nghbrNum)
@@ -469,13 +471,13 @@ func (pn *PaxosNode) CleanNbrsOnRequest(neighbour string) (b bool) {
 			errQueue <- v.Call("PaxosNodeRPCWrapper.RUAlive", k, &b)
 			c <- b
 			select {
-			case err := <- errQueue:
+			case err := <-errQueue:
 				singletonlogger.Debug("[paxosnode] channel worked on CLEANING")
 				if err != nil {
 					pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 					singletonlogger.Debug(fmt.Sprintf("[paxosnode] on CLEANING failed %v", k))
 				}
-			case <- time.After(TIMER):
+			case <-time.After(TIMER):
 				pn.FailedNeighbours = append(pn.FailedNeighbours, k)
 			}
 		}(k, v)
