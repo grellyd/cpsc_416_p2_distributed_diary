@@ -73,7 +73,7 @@ C1>[DD]: read
 CHECK: read is empty
 
 5. A majority of PNs fail during a Paxos round
-Solution: The system ends the current Paxos round right away, each PN will remove the failed PNs from its list of neighbours, and the system proceeds to the next Paxos round. Majority threshold is updated given the remaining PNs alive in the system.
+Solution: Each live PN updates its neighbours by the failed neighbours protocol. The current round ends and the next begins. Majority threshold is updated given the live PNs.
 
 Start S,C1,C2,C3, C4
 C1>[DD]: write hello
@@ -92,3 +92,19 @@ C1>[DD]: continue
 CHECK: C1 and C4 do see 'bye' in their logs. --debug should show the original
 round failure with four nodes, and then the restart of the round with two
 nodes, which reaches a majority.
+
+6. A Node fails and reconnects when there are 3 or more peers present
+Solution: If the node re-connects with the same port number, it restores the last proposed and last accepted values from its backup file and pulls a new log from the Paxos NW.
+ 
+Start S,C1,C2,C3
+C1>[DD]: write hello
+C2>[DD]: write world
+CHECK: Read all is the same
+
+C1>[DD]: exit
+
+CHECK: Read all is the same
+
+Restart C1
+
+CHECK: Read all is the same
