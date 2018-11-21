@@ -1,0 +1,566 @@
+
+<!-- saved from url=(0073)https://www.cs.ubc.ca/~bestchai/teaching/cs416_2017w2/project2/index.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<link rel="stylesheet" type="text/css" href="./Project 2_files/style.css"> 
+<script type="text/javascript" async="" src="./Project 2_files/ga.js"></script><script type="text/javascript" src="./Project 2_files/main.js"></script>
+</head>
+<body>
+<title>Project 2</title>
+
+<table id="main">
+
+<tbody><tr><td style="padding-bottom: 20px">
+<h2><a href="https://www.cs.ubc.ca/~bestchai/teaching/cs416_2017w2/index.html">416</a> Distributed Systems: Project 2 [Open ended]</h2>
+<h3>Report due Apr 6th at 11:59PM</h3>
+<p style="color:gray"><small>Winter 2018</small></p>
+</td></tr>
+
+<!-- -------------------------------------------------------------->
+
+<tr><td>
+
+<p>
+Project 2 is an open-ended project that must be done in a team of 3-5
+people and must be (at least partially) deployed on Azure. For this
+project you can use the same team from project 1, or you can form a
+new team. I encourage you to form teams of 4 people: this will allow
+us to grant you more time for your demos, and will provide you with
+sufficient developer power to execute on an ambitious project.
+</p>
+
+<p>
+Note that two key project deliverables are write-ups
+(proposal/report). The proposal write-up alone is 10% of your final
+mark! The proposal and the final report must clearly convey the
+high-level ideas, be technically thorough, and must be
+well-written. Quality technical writing takes time and care. Use
+well-established methods to improve your writing: draft increasingly
+detailed outlines, get feedback from your peers/TAs on early ideas and
+drafts, compose descriptive infographics/diagrams, use the
+spellchecker, etc. Proposal write-ups that are vague, incomplete, or
+incoherent will receive a poor mark (you will also probably have to
+redo your proposal, but with much less time).
+</p>
+
+<h4>Type of project</h4>
+<div class="hbarshort"></div>
+
+<p>
+Your project must address a non-trivial problem related
+to <b>distributed systems</b>. It must include a substantial software
+effort in Go. Note that 'substantial' includes complexity and not just
+code size. The most direct way to satisfy the project requirement is
+to prototype a distributed system. Such a system can be built from
+scratch, but the project can also be formulated as a non-trivial
+extension to an existing system. The idea behind the system does not
+need to be original, but the majority of the distributed logic in the
+implemented system must be implemented by the project team.
+</p>
+
+<p>As a benchmark, your project must have about the same
+complexity/difficulty as <a href="https://www.cs.ubc.ca/~bestchai/teaching/cs416_2017w2/project1/index.html">project
+1</a>.</p>
+
+<p>
+Project constraints (evolving):
+</p><ul>
+
+  <li>Go must be used for the core distributed logic in the
+    system. However, other languages may also be used in the
+    project. For example, you can build a distributed system in Go and
+    have Android clients, implemented in Java, that connect to it and
+    use it.
+  </li>
+
+  <li>The system must be able to support node churn: nodes that fail
+    and leave the system, as well as nodes that join the system.</li>
+
+  <li>The system cannot be embarrassingly parallel: there must be some
+    distributed state and coordination between nodes in your
+    system.</li>
+
+  <li>At least some part of the system must be deployed on Azure.</li>
+
+  <li>The system must be well tested.</li>
+
+</ul>
+<p></p>
+
+
+<h4>Project ideas</h4>
+<div class="hbar"></div>
+
+<p>
+Here are several project ideas. Treat these as inspiration; I strongly
+encourage you to come up with your own project idea.
+</p>
+
+<p><b>Project idea: Build an anonymity network</b></p>
+<div class="hbarshort"></div>
+
+<p>
+<a href="https://en.wikipedia.org/wiki/Tor_(anonymity_network)">Tor</a>
+is an anonymity system built
+on <a href="https://en.wikipedia.org/wiki/Onion_routing">onion
+routing</a>. Tor allows clients to obfuscate their network
+identity/location (IP address). The idea is simple, but supporting
+multiple clients, defending against attacks, and providing good
+performance to clients (e.g., responsive browsing) are non-trivial
+requirements.
+</p>
+
+<img style="float:right; padding-left:2%; width:50%; padding-right:2%" src="./Project 2_files/tor.png">
+
+<p>
+One version of this project is to prototype a basic version of Tor,
+deploying it on Azure, and demonstrating that you can use it to
+browser the internet. A basic version might include:
+</p><ul>
+<li>Handling connecting/disconnecting guard/relay/exit nodes</li>
+<li>Secure onion routing (intermediate hops do not observe payload)</li>
+<li>Circuit setup/tear-down protocols</li>
+<li>Periodic circuit refresh to avoid using a circuit for too long</li>
+</ul>
+<p></p>
+
+<p>
+Tor is just one type of anonymity system. If you are interested in
+this space, there are a variety of other system designs that you can
+adopt. Or, feel free to create a new one!
+</p>
+
+<img style="float:right; padding-left:2%; width:30%; padding-right:2%" src="./Project 2_files/p2p-ml.png">
+
+<h4>Project idea: Build a peer-to-peer machine learning system</h4>
+<div class="hbarshort"></div>
+
+<p>
+Machine learning is all the rage. There are many distributed
+frameworks, but all of them assume a centralized learning process with
+access to a central store of training data. Build a peer-to-peer
+solution for learning a global model (of a variety of your choice)
+that has as few centralized components as possible and where data is
+spread across peers. Assume an adversarial context in which peers do
+not want to reveal their data to others. For this project you may want
+to recruit to your team someone who has taken CPSC 340 (and has done
+well in it). You can also substantially expand the security/privacy
+requirements of this project.
+</p>
+
+
+<h4>Project idea: Build a distributed web crawler/search engine</h4>
+<div class="hbarshort"></div>
+
+<img style="float:right; padding-left:2%; width:40%; padding-right:2%" src="./Project 2_files/arch.png">
+
+<p>
+Web crawling is kind of a 90s topic. But, an efficient and scalable
+version is a complex distributed system with many interesting
+pieces. Last
+year's <a href="http://www.cs.ubc.ca/~bestchai/teaching/cs416_2016w2/assign5/index.html">assignment
+5</a> describes an 'assignment' version of a web crawler that is a
+good starting point. This version described a set of worker crawlers
+that are spread over multiple data-centers, a web-graph that is
+maintained in a distributed fashion, a distributed page rank
+computation, and keyword search capability. You could extend this
+version or consider building a different variant.
+</p>
+
+
+<p><b>Some other project ideas</b></p>
+
+<div class="hbarshort"></div>
+
+<ul>
+<li>Build a distributed object system,
+like <a href="https://dl.acm.org/citation.cfm?id=42182">Emerald</a>
+but without a compiler.</li>
+
+<li>Build a distributed shared memory system,
+like <a href="http://cseweb.ucsd.edu/classes/sp11/cse223b/papers/keleher94.pdf">Treadmarks</a></li>
+
+<li>Build a distributed assertions mechanism that can be used for
+runtime checking of distributed systems.</li>
+
+<li>Implement a byzantine fault tolerance algorithm, an example
+is <a href="http://www.pmg.csail.mit.edu/papers/osdi99.pdf">PBFT</a></li>
+
+</ul>
+
+<br>
+<h3>Proposal</h3>
+<div class="hbar"></div>
+
+<p>A project proposal is a paper that details the problem, your
+proposed approach/solution to the problem, a realistic timeline for
+your team's actions to create the solution, and
+a <a href="https://en.wikipedia.org/wiki/SWOT_analysis">SWOT
+analysis</a> for your team/project. </p>
+
+<p>
+You should aim for a proposal that is about 5 pages long. Shorter and
+you're probably missing some detail; longer and it becomes too
+detailed and too long to read. That said, there are <b>no</b> page
+limits (lower bounds nor upper bounds) on your proposal.
+</p>
+
+<p>Here are three example proposals from the last time I taught this
+course with an open-ended project:</p>
+
+<ul>
+<li><a href="https://www.cs.ubc.ca/~bestchai/teaching/cs416_2017w2/project2/project_c9f7_i5l8_o0p4_p0j8_proposal.pdf">Heterogeneous Dynamic BSP programming in Go with a Pregel-inspired API</a></li>
+<li><a href="https://www.cs.ubc.ca/~bestchai/teaching/cs416_2017w2/project2/project_m6r8_s8u8_v5v8_y6x8_proposal.pdf">Live Pod Migration in Kubernetes</a></li>
+<li><a href="https://www.cs.ubc.ca/~bestchai/teaching/cs416_2017w2/project2/project_n6n8_u2c9_v0r5_x5m8_proposal.pdf">Distributed Key­Value Store Utilizing CRDT to Guarantee Eventual Consistency</a></li>
+</ul>
+
+<p>
+Here are two high-level ways in which I think about your proposal:
+</p><ul>
+
+<li><b>A proposal is a contract.</b> If you build the thing described
+in the proposal then you get a perfect mark on the project. But,
+writing good contracts is hard work. For example, a good contract must
+be precise (it should be clear what you are and are not going to do).
+</li>
+
+<li><b>A proposal is your opportunity to convince me that you know
+what you're getting yourself into.</b> I won't let you do a project if
+I know that you do not stand a reasonable chance of succeeding at it
+(this is a distributed system course, not an SE course :-) So, the
+proposal should convince me that you know what you're doing -- that
+you've thought about the key issues (you know what they are,
+approximately how you're going to solve them), you know what resources
+you will need/where you will get them
+(technology/libraries/algorithms/data sources/hardware/etc), that you
+thought about how to manage your time and how to manage the team roles
+and responsibilities (who does what/when), and that it all adds up to
+a realistic plan for a successful project.</li>
+
+</ul>
+<p></p>
+
+<p>
+You may also find the
+following <a href="http://www.cs.ubc.ca/~bestchai/teaching/cs538b_2016w1/proposals.html">proposal
+advice</a> useful (from a grad course that I taught).
+</p>
+
+
+<h4>SWOT analysis:</h4>
+<div class="hbarshort"></div>
+
+<p>
+Your proposal must include a SWOT analysis, which is a project
+planning tool/exercise. The focus of the SWOT analysis should not be
+on your idea, but on the various factors that will influence your
+ability to execute successfully. This includes things like human
+resources, time/scheduling constraints, etc.
+</p>
+ 
+<p>There are three key things you should focus on when you put this together:</p>
+<ul>
+<li>Do this as a team: don't outsource this to one team member</li>
+
+<li>Be honest: if you are worried about something, this is your chance
+to get it out in writing</li>
+
+<li>Be specific: you want each item in SWOT to be one concrete factor,
+so articulate it as tightly as possible.</li>
+</ul>
+
+<p>Here are some fairly generic <b>examples</b> (i.e., yours should be more specific):</p>
+
+Internals (strengths/weakness):
+<ul>
+
+<li>s: all team members have worked with each other before, so are
+familiar with each other's work style</li>
+
+<li>s: entire team has extensive experience in programming in Go </li>
+
+<li>s: project is based on an existing system that is well documented
+and that two of the team members know inside and out</li>
+
+<li>w: none of the team members know each other</li>
+
+<li>w: team members have a variety of communication styles, some of
+which will require non-trivial management</li>
+
+<li>w: project will be difficult because none of the team members
+understood Ivan's lecture on BitTorrent</li>
+</ul>
+ 
+
+<p>Externals (threats/opportunities) -- you'll probably have fewer of these than the internal ones:</p>
+
+<ul>
+<li>t: team decided to use Android phones, but this require finding a
+library that supports Go-Dalvik VM cross-compilation, which may or may
+not exist
+</li>
+ 
+
+<li>t: three of the four team members might have to leave town to compete
+in the pan-American synchronized swimming competition; this would make
+them lose two weeks of project work.
+</li>
+ 
+<li>o: one of the team members has a relative that works at Raspberry
+Pi who agreed to send us 100 Pis to use for the 416 project</li>
+
+<li>o: new version of Go comes out in two weeks and the word on the
+street is that this version will include native support for
+distributed objects, which will make our project 10x faster to
+build</li>
+</ul>
+
+<h4>Your proposed project might evolve</h4>
+<div class="hbarshort"></div>
+
+<p>The proposal is your best effort at scoping out the challenges that
+you expect to come up against and some ideas/plan on how you will
+resolve these. But, of course, system design and software engineering
+is not that predictable.</p>
+
+<p>It's difficult to describe how much you can deviate from the
+proposal. So, UDP instead of TCP may not be a significant change for
+some proposals, but could be a major change for others (e.g., if you
+are investigating distributed congestion control adaptation in TCP and
+now change to UDP, the difference is major!).
+</p>
+ 
+<p>Please discuss potential major changes with the TA assigned to your
+group and/or with Ivan.</p>
+
+
+<br>
+<h3>Prototype implementation</h3>
+<div class="hbar"></div>
+
+<p>
+There are no constraints on your distributed system design and
+implementation outside of the ones listed at the top. If you have any
+questions, please ask on Piazza.
+</p>
+
+
+<br>
+<h3>Report</h3>
+<div class="hbar"></div>
+
+<p>
+Your final report is a description of the problem you attempted to
+solve, what you have built to solve the problem, why you built your
+system the way you did, and how the system works/doesn't work. You
+should aim for a final report that is no more than 10 pages long.
+</p>
+
+<br>
+<h3>Deliverables</h3>
+<div class="hbar"></div>
+
+<p>
+<b>For further details about the report/code/demo deliverables and marking
+process, see
+this <a href="https://piazza.com/class/jbyh5bsk4ez3cn?cid=837">Pizza
+post</a>.</b>
+</p>
+
+
+<p>
+
+All project 2 deliverables are due at 11:59PM on their respective dates.
+
+</p><ul>
+
+  <li><b>Project proposal</b></li>
+
+  <ul>
+
+    <li>Use your group's stash project repository to submit your
+      proposal. Place your proposal
+      into <tt>proposal/proposal.pdf</tt> at the top level of your
+      repository (if you use LaTex, make sure that it is compiled into
+      a pdf).
+    </li>
+    <li>
+      To submit a project proposal <i>draft</i>, do the above step and
+      also email Ivan the group's repository name. Use the subject
+      line (with [[title]] replaced with your project title): [416]
+      Project 2 proposal draft: [[title]]
+    </li>
+
+  </ul>
+
+  <li><b>Prototype implementation</b></li>
+
+  <ul>
+
+    <li><strike>Your repository should include a detailed README file that
+      explains how to compile/configure/run your implementation.</strike></li>
+
+  </ul>
+
+  <li><b>Project report:</b> a paper detailing the problem, your
+    approach/solution, design of your prototype, and an evaluation of
+    the prototype.</li>
+
+  <ul>
+
+    <li>Use your group's stash project repository to submit your
+      report. Place your report into <tt>report/report.pdf</tt> at the
+      top level of your repository (if you use LaTex, make sure that
+      it is compiled into a pdf).
+    </li>
+
+  </ul>
+
+  <li><b>Project demo:</b> a TBD-minute private demo of your project to
+    the instructor/group TA, including a technical Q/A regarding the
+    project design and implementation.</li>
+
+  <ul>
+    <li>The stash project repositories will <b>not</b> be frozen after
+    you submit your code and report. So, you can continue to use your
+    repository to develop and improve your demo.</li>
+  </ul>
+
+</ul>
+<p></p>
+
+<h4>Deadlines</h4>
+<div class="hbarshort"></div>
+<p>
+The project is structured as a series of regularly occurring
+deadlines. Do not miss these!  The deadline deliverable must be
+submitted through stash by 11:59PM the day of the deadline.
+</p>
+
+<p>
+</p><ul>
+  <li>
+    Mar 2 : Project proposal drafts (not marked, for feedback
+    only). If you do not email Ivan, then he will not read your draft.
+  </li>
+  <li>
+    Mar 9 : Final project proposals
+  </li>
+  <li>
+    Mar 23 : Each team must send email to an assigned TA to schedule a
+    meeting to discuss project status.
+  </li>
+  <li>
+    Apr 6 : Project code and final reports
+  </li>
+  <li>
+    Apr 9-20 : Project demos (TBD minutes/group)
+  </li>
+</ul>
+
+<p></p>
+
+
+<h4>Logistics</h4>
+<div class="hbarshort"></div>
+
+<p>
+Sign up for a project stash
+repository <a href="https://www.ugrad.cs.ubc.ca/~cs416/php/register-partners.php">here</a>.
+</p>
+
+
+
+<h4>Grading scheme</h4>
+<div class="hbarshort"></div>
+
+<p>Project 2 is 35% of your final mark. Here is the mark breakdown:</p>
+
+<ul>
+  <li><small>Proposal: 10%</small></li>
+  <li><small>Report and code: 15%</small></li>
+  <li><small>Demo: 10%</small></li>
+  <li><small>Peer review multiplier</small></li>
+</ul>
+
+
+<br>
+<h3>Extra credit</h3>
+<div class="hbarshort"></div>
+
+<p>
+This project is extensible with two kinds of extra credit:
+
+</p><ul>
+
+<li>
+EC1 [2% of final mark]: Add support
+for <a href="https://github.com/DistributedClocks/GoVector">GoVector</a>
+and <a href="https://bestchai.bitbucket.io/shiviz/">ShiViz</a> to your
+system. Generate comprehensible ShiViz diagrams that explain your
+distributed system data/control flow and protocol design. These
+diagrams/explanations must be in your final report and you must show a
+live demo (loading logs into ShiViz and generating and explaining the
+result). Store the logs for your diagrams in the report/demo in the
+report repository.
+</li>
+
+<li>EC2 [2% of final mark]: Demonstrate the likely correctness of your
+system by using
+the <a href="https://bitbucket.org/bestchai/dinv/">Dinv</a> dynamic
+program analysis tool. You must generate at least 3 types of
+invariants that illustrate 3 different kinds of correctness conditions
+of your system. These must be listed and explained in the final
+report. The logs that lead to the properties you describe must be part
+of the report repository. You do <i>not</i> have to demo Dinv.
+</li>
+
+</ul>
+<p></p>
+
+
+<br><br>
+
+<p>
+Make sure to follow the
+course <a href="https://www.cs.ubc.ca/~bestchai/teaching/cs416_2017w2/index.html#honesty">collaboration policy</a>.
+</p>
+
+</td></tr>
+
+<!-- -------------------------------------------------------------->
+
+<tr><td style="padding:0px">
+<br><br><br>
+<div id="footer">
+Last updated: April 5, 2018
+</div>
+<!--
+Local Variables:
+time-stamp-start: "^Last updated: "
+time-stamp-end: "\\.?$"
+time-stamp-format: "%:b %:d, %:y"
+time-stamp-line-limit: -50
+End:
+-->
+</td></tr>
+
+</tbody></table>
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-793279-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+
+
+
+</body></html>
