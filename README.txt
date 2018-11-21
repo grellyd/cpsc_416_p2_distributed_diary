@@ -5,6 +5,8 @@ The Chamber of Secrets: A Distributed Diary
 Created for:
 CPSC 416 Distributed Systems, in the 2017W2 Session at the University of British Columbia (UBC)
 
+https://www.cs.ubc.ca/~bestchai/teaching/cs416_2017w2/project2/index.html
+
 Authors: Graham L. Brown (c6y8), Aleksandra Budkina (f1l0b), Larissa Feng (l0j8), Harryson Hu (n5w8), Sharon Yang (l5w8)
 
 The application can be run both on a local machine and on Azure with different VMs.
