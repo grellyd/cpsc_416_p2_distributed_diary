@@ -3,7 +3,8 @@ The Chamber of Secrets: A Distributed Diary
 ============================================
 
 Created for:
-CPSC 416 Distributed Systems, in the 2017W2 Session at the University of British Columbia (UBC)
+CPSC 416 Distributed Systems, in the 2017W2 Session at the University of
+British Columbia (UBC) to demonstrate the PAXOS Consensus Algorithm
 
 https://www.cs.ubc.ca/~bestchai/teaching/cs416_2017w2/project2/index.html
 
